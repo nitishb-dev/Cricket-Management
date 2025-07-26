@@ -1,0 +1,25 @@
+{
+  "name": "cricket-management-server",
+  "version": "1.0.0",
+  "description": "Backend server for Cricket Management Application",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "mysql2": "^3.6.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["cricket", "management", "express", "postgresql"],
+  "author": "",
+  "license": "ISC"
+} 
