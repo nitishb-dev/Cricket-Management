@@ -2,6 +2,14 @@
 
 A full-stack dynamic Cricket Web Application that manages cricket matches, dynamic teams, player statistics, and match history. Built with React, Node.js, Express, and MySQL.
 
+This web application was built using a prompt-engineering-first approach:
+
+- 💡 Idea + Prompts refined using **ChatGPT**
+- 🔧 Initial code generation through **bolt.new**
+- 🧠 Final development and completion using **Cursor AI** (AI code editor)
+
+The project combines human creativity with AI-augmented development. All logic, decisions, and final code were reviewed and customized as needed.
+
 ## ✨ Features
 
 - **Player & Team Management**: Add global players and create dynamic teams
