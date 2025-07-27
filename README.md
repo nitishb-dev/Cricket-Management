@@ -151,7 +151,7 @@ npm start                # Start production server
 
 ### Players Table
 ```sql
-CREATE TABLE players (
+CREATE TABLE IF NOT EXISTS players (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
   name VARCHAR(255) NOT NULL UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -160,17 +160,17 @@ CREATE TABLE players (
 
 ### Matches Table
 ```sql
-CREATE TABLE matches (
+CREATE TABLE IF NOT EXISTS matches (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
   team_a_name VARCHAR(255) NOT NULL,
   team_b_name VARCHAR(255) NOT NULL,
-  overs INTEGER NOT NULL,
-  toss_winner VARCHAR(255) NOT NULL,
-  toss_decision VARCHAR(10) NOT NULL,
-  team_a_score INTEGER DEFAULT 0,
-  team_a_wickets INTEGER DEFAULT 0,
-  team_b_score INTEGER DEFAULT 0,
-  team_b_wickets INTEGER DEFAULT 0,
+  overs INT NOT NULL,
+  toss_winner VARCHAR(255),
+  toss_decision VARCHAR(10),
+  team_a_score INT DEFAULT 0,
+  team_a_wickets INT DEFAULT 0,
+  team_b_score INT DEFAULT 0,
+  team_b_wickets INT DEFAULT 0,
   winner VARCHAR(255),
   man_of_match VARCHAR(255),
   match_date DATE DEFAULT (CURRENT_DATE),
@@ -180,13 +180,18 @@ CREATE TABLE matches (
 
 ### Match Player Stats Table
 ```sql
-CREATE TABLE match_player_stats (
+CREATE TABLE IF NOT EXISTS match_player_stats (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
   match_id VARCHAR(36),
   player_id VARCHAR(36),
-  team VARCHAR(255) NOT NULL,
-  runs INTEGER DEFAULT 0,
-  wickets INTEGER DEFAULT 0,
+  team VARCHAR(255),
+  runs INT DEFAULT 0,
+  wickets INT DEFAULT 0,
+  ones INT DEFAULT 0,
+  twos INT DEFAULT 0,
+  threes INT DEFAULT 0,
+  fours INT DEFAULT 0,
+  sixes INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
