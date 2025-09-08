@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { History, Trophy, Calendar, Search, Filter, RotateCcw, Trash2 } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
-import { Match, MatchPlayerStats } from '../types/cricket'
-import { MatchData } from '../types/cricket'
+import { Match, MatchPlayerStats, MatchData, TeamPlayer } from '../types/cricket'
 import dayjs from 'dayjs'
 
 interface MatchHistoryProps {
@@ -16,10 +15,12 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
   const [matchStats, setMatchStats] = useState<MatchPlayerStats[]>([])
   const [filterTeam, setFilterTeam] = useState('')
 
-  const uniqueTeams = Array.from(new Set([
-    ...matches.map(m => m.team_a_name),
-    ...matches.map(m => m.team_b_name)
-  ])).sort()
+  const uniqueTeams = Array.from(
+    new Set([
+      ...matches.map(m => m.team_a_name),
+      ...matches.map(m => m.team_b_name)
+    ])
+  ).sort()
 
   const filteredMatches = matches.filter(match => {
     const matchesSearch =
@@ -28,9 +29,8 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
       match.winner.toLowerCase().includes(searchTerm.toLowerCase()) ||
       match.man_of_match.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesTeamFilter = !filterTeam ||
-      match.team_a_name === filterTeam ||
-      match.team_b_name === filterTeam
+    const matchesTeamFilter =
+      !filterTeam || match.team_a_name === filterTeam || match.team_b_name === filterTeam
 
     return matchesSearch && matchesTeamFilter
   })
@@ -44,21 +44,22 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
   const handleRematch = async (match: Match) => {
     const stats = await getMatchPlayerStats(match.id)
 
-    const teamAPlayers = stats
+    // ✅ Build team players properly as TeamPlayer[]
+    const teamAPlayers: TeamPlayer[] = stats
       .filter(stat => stat.team === match.team_a_name)
       .map(stat => {
         const player = players.find(p => p.id === stat.player_id)
         return player ? { player, runs: 0, wickets: 0 } : null
       })
-      .filter(Boolean)
+      .filter((p): p is TeamPlayer => p !== null)
 
-    const teamBPlayers = stats
+    const teamBPlayers: TeamPlayer[] = stats
       .filter(stat => stat.team === match.team_b_name)
       .map(stat => {
         const player = players.find(p => p.id === stat.player_id)
         return player ? { player, runs: 0, wickets: 0 } : null
       })
-      .filter(Boolean)
+      .filter((p): p is TeamPlayer => p !== null)
 
     if (teamAPlayers.length > 0 && teamBPlayers.length > 0) {
       const tossWinner = window.prompt('Who won the toss? (Enter team name exactly)', match.team_a_name)
@@ -74,16 +75,10 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
       }
 
       const rematchData: MatchData = {
-        teamA: {
-          name: match.team_a_name,
-          players: teamAPlayers as any[]
-        },
-        teamB: {
-          name: match.team_b_name,
-          players: teamBPlayers as any[]
-        },
+        teamA: { name: match.team_a_name, players: teamAPlayers },
+        teamB: { name: match.team_b_name, players: teamBPlayers },
         overs: match.overs,
-        tossWinner: tossWinner,
+        tossWinner,
         tossDecision: tossDecision as 'bat' | 'bowl',
         currentInning: 1,
         isCompleted: false
@@ -92,20 +87,19 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
       onRematch(rematchData)
     }
   }
-  
 
   const handleDelete = async (e: React.MouseEvent, matchId: string) => {
     e.stopPropagation()
     const confirmDelete = window.confirm('Are you sure you want to delete this match?')
     if (!confirmDelete) return
     try {
-      await deleteMatch(matchId)  // ✅ Correct
+      await deleteMatch(matchId)
       setSelectedMatch(null)
       setMatchStats([])
-    } catch (err) {
+    } catch {
       alert('Failed to delete match.')
     }
-  }  
+  }
 
   if (loading) {
     return (
@@ -119,7 +113,8 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
           <History className="text-green-600" />
@@ -128,8 +123,10 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
         <div className="text-sm text-gray-600">{matches.length} matches played</div>
       </div>
 
+      {/* Search & Filters */}
       <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input
@@ -141,6 +138,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
             />
           </div>
 
+          {/* Team Filter */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <select
@@ -155,6 +153,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
             </select>
           </div>
 
+          {/* Matches Found */}
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar className="text-gray-400" size={16} />
             {filteredMatches.length} matches found
@@ -162,7 +161,9 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
         </div>
       </div>
 
+      {/* Matches + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Matches List */}
         <div className="lg:col-span-2 space-y-4">
           {filteredMatches.map(match => (
             <div
@@ -171,6 +172,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
               onClick={() => loadMatchStats(match)}
             >
               <div className="p-4 sm:p-6">
+                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
                   <div className="flex items-center gap-2">
                     <Trophy className="text-orange-500" size={20} />
@@ -183,6 +185,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
                   </span>
                 </div>
 
+                {/* Scores */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
                     <div className="font-bold text-lg text-gray-800">
@@ -198,6 +201,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
                   </div>
                 </div>
 
+                {/* Result + Actions */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                   <div>
                     <div className="font-semibold text-green-600">
@@ -226,6 +230,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
                   </div>
                 </div>
 
+                {/* Match Meta */}
                 <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 flex flex-col sm:flex-row sm:justify-between">
                   <span>{match.overs} overs</span>
                   <span>
@@ -237,6 +242,7 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
           ))}
         </div>
 
+        {/* Sidebar */}
         <div className="lg:sticky lg:top-6 lg:self-start">
           {selectedMatch ? (
             <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">

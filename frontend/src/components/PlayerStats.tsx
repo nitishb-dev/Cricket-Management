@@ -8,7 +8,7 @@ const colorMap = {
   red: { from: 'from-red-400', to: 'to-red-500', text: 'text-red-100' },
   green: { from: 'from-green-400', to: 'to-green-500', text: 'text-green-100' },
   purple: { from: 'from-purple-400', to: 'to-purple-500', text: 'text-purple-100' }
-}
+} as const
 
 export const PlayerStats: React.FC = () => {
   const { getAllPlayerStats, loading } = useCricket()
@@ -28,13 +28,15 @@ export const PlayerStats: React.FC = () => {
     } catch (err) {
       console.error("Error fetching stats:", err)
       setPlayerStats([])
+    } finally {
+      setLoadingStats(false)
     }
-    setLoadingStats(false)
   }
 
-  const getTopPerformers = (key: keyof CricketPlayerStats) => {
-    const maxValue = Math.max(...playerStats.map(p => p[key] || 0))
-    return playerStats.filter(p => (p[key] || 0) === maxValue)
+  const getTopPerformers = (key: keyof Omit<CricketPlayerStats, 'player'>) => {
+    if (playerStats.length === 0) return []
+    const maxValue = Math.max(...playerStats.map(p => (p[key] ?? 0)))
+    return playerStats.filter(p => (p[key] ?? 0) === maxValue)
   }
 
   const topPerformers = {
@@ -78,17 +80,14 @@ export const PlayerStats: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[{
-              title: 'Top Run Scorer', key: 'totalRuns', data: topPerformers.runs, color: 'yellow', icon: Target
-            }, {
-              title: 'Top Wicket Taker', key: 'totalWickets', data: topPerformers.wickets, color: 'red', icon: TrendingUp
-            }, {
-              title: 'Most Matches', key: 'totalMatches', data: topPerformers.matches, color: 'green', icon: Trophy
-            }, {
-              title: 'Most MoM Awards', key: 'manOfMatchCount', data: topPerformers.mom, color: 'purple', icon: Award
-            }].map(({ title, key, data, color, icon: Icon }, idx) => {
-              const { from, to, text } = colorMap[color as keyof typeof colorMap]
-              const value = data[0]?.[key as keyof CricketPlayerStats] || 0
+            {([
+              { title: 'Top Run Scorer', key: 'totalRuns', data: topPerformers.runs, color: 'yellow', icon: Target },
+              { title: 'Top Wicket Taker', key: 'totalWickets', data: topPerformers.wickets, color: 'red', icon: TrendingUp },
+              { title: 'Most Matches', key: 'totalMatches', data: topPerformers.matches, color: 'green', icon: Trophy },
+              { title: 'Most MoM Awards', key: 'manOfMatchCount', data: topPerformers.mom, color: 'purple', icon: Award }
+            ] as const).map(({ title, key, data, color, icon: Icon }, idx) => {
+              const { from, to, text } = colorMap[color]
+              const value = data[0]?.[key] ?? 0
               const names = data.map(p => p.player.name).join(', ')
               return (
                 <div key={idx} className={`bg-gradient-to-r ${from} ${to} rounded-xl shadow-md p-6 text-white`}>
@@ -108,10 +107,16 @@ export const PlayerStats: React.FC = () => {
           <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-gray-700 font-medium">Sort by:</span>
-              {[{ key: 'runs', label: 'Total Runs' }, { key: 'wickets', label: 'Total Wickets' }, { key: 'matches', label: 'Matches Played' }, { key: 'wins', label: 'Wins' }, { key: 'mom', label: 'Man of Match' }].map(option => (
+              {([
+                { key: 'runs', label: 'Total Runs' },
+                { key: 'wickets', label: 'Total Wickets' },
+                { key: 'matches', label: 'Matches Played' },
+                { key: 'wins', label: 'Wins' },
+                { key: 'mom', label: 'Man of Match' }
+              ] as const).map(option => (
                 <button
                   key={option.key}
-                  onClick={() => setSortBy(option.key as any)}
+                  onClick={() => setSortBy(option.key)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${sortBy === option.key ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   {option.label}
@@ -172,4 +177,3 @@ export const PlayerStats: React.FC = () => {
     </div>
   )
 }
-

@@ -1,263 +1,676 @@
-import React, { useState, useEffect } from 'react'
-import { Trophy, Target, AlertCircle, Save, X, Trash2 } from 'lucide-react'
-import { useCricket } from '../context/CricketContext'
-import { MatchData } from '../types/cricket'
-import dayjs from 'dayjs'
+// import React, { useState, useEffect } from 'react'
+// import { 
+//   Trophy, 
+//   Target, 
+//   Clock,
+//   Save,
+//   AlertCircle,
+// } from 'lucide-react'
+// import { useCricket, SaveMatchPayload } from '../context/CricketContext'
+// import { MatchData, TeamPlayer } from '../types/cricket'
 
-interface MatchPlayProps {
-  matchData: MatchData
-  onMatchComplete: () => void
-  onCancel: () => void
-}
+// interface MatchPlayProps {
+//   matchData: MatchData
+//   onMatchComplete: () => void
+//   onCancel: () => void
+// }
 
-export const MatchPlay: React.FC<MatchPlayProps> = ({ matchData, onMatchComplete, onCancel }) => {
-  const { saveMatch, deleteMatch } = useCricket()
-  const [currentMatch, setCurrentMatch] = useState<MatchData>(matchData)
-  const [saving, setSaving] = useState(false)
-  const [isMatchCompleted, setIsMatchCompleted] = useState(false)
-  const [firstInningTotal, setFirstInningTotal] = useState(0)
+// type BallOutcome = 'dot' | '1' | '2' | '3' | '4' | '6' | 'wide' | 'noball' | 'wicket'
 
-  const isFirstInning = currentMatch.currentInning === 1
+// interface BallEvent {
+//   runs: number
+//   isWicket: boolean
+//   isExtra: boolean
+//   extraType?: 'wide' | 'noball'
+//   batsmanName?: string
+//   bowlerName?: string
+// }
 
-  const tossWinnerKey = currentMatch.tossWinner === currentMatch.teamA.name ? 'teamA' : 'teamB'
-  const tossLoserKey = tossWinnerKey === 'teamA' ? 'teamB' : 'teamA'
+// interface InningStats {
+//   runs: number
+//   wickets: number
+//   balls: number
+//   overs: number
+//   ballsThisOver: number
+// }
 
-  const getTeamKey = (team: 'batting' | 'bowling') => {
-    if (team === 'batting') {
-      return currentMatch.currentInning === 1
-        ? currentMatch.tossDecision === 'bat' ? tossWinnerKey : tossLoserKey
-        : currentMatch.tossDecision === 'bat' ? tossLoserKey : tossWinnerKey
-    } else {
-      return currentMatch.currentInning === 1
-        ? currentMatch.tossDecision === 'bat' ? tossLoserKey : tossWinnerKey
-        : currentMatch.tossDecision === 'bat' ? tossWinnerKey : tossLoserKey
-    }
-  }
+// export const MatchPlay: React.FC<MatchPlayProps> = ({ 
+//   matchData: initialMatchData, 
+//   onMatchComplete, 
+//   onCancel 
+// }) => {
+//   const { saveMatch } = useCricket()
+  
+//   // Match state
+//   const [matchData, setMatchData] = useState<MatchData>(initialMatchData)
+//   const [currentInning, setCurrentInning] = useState<1 | 2>(1)
+//   const [isMatchComplete, setIsMatchComplete] = useState(false)
+//   const [winner, setWinner] = useState<string>('')
+//   const [manOfMatch, setManOfMatch] = useState<string>('')
+//   const [dismissedBatsmen, setDismissedBatsmen] = useState<Set<string | number>>(new Set())
+//   const [currentOverBowler, setCurrentOverBowler] = useState<string | number | null>(null)
+//   const [previousOverBowler, setPreviousOverBowler] = useState<string | number | null>(null)
+  
+//   // Inning stats
+//   const [inning1Stats, setInning1Stats] = useState<InningStats>({
+//     runs: 0, wickets: 0, balls: 0, overs: 0, ballsThisOver: 0
+//   })
+//   const [inning2Stats, setInning2Stats] = useState<InningStats>({
+//     runs: 0, wickets: 0, balls: 0, overs: 0, ballsThisOver: 0
+//   })
+  
+//   // UI state
+//   const [selectedBatsman, setSelectedBatsman] = useState<TeamPlayer | null>(null)
+//   const [selectedBowler, setSelectedBowler] = useState<TeamPlayer | null>(null)
+//   const [isSaving, setIsSaving] = useState(false)
+//   const [showMOMSelector, setShowMOMSelector] = useState(false)
+//   const [error, setError] = useState<string | null>(null)
 
-  const battingTeamKey = getTeamKey('batting')
-  const bowlingTeamKey = getTeamKey('bowling')
-  const battingTeam = currentMatch[battingTeamKey]
-  const bowlingTeam = currentMatch[bowlingTeamKey]
+//   const currentBattingTeam = getCurrentBattingTeam()
+//   const currentBowlingTeam = getCurrentBowlingTeam()
+//   const currentStats = currentInning === 1 ? inning1Stats : inning2Stats
+//   const setCurrentStats = currentInning === 1 ? setInning1Stats : setInning2Stats
 
-  const updatePlayerStats = (
-    team: 'batting' | 'bowling',
-    playerId: string | number,
-    runs: number,
-    wickets: number
-  ) => {
-    if (isMatchCompleted) return
-    const key = team === 'batting' ? battingTeamKey : bowlingTeamKey
+//   function getCurrentBattingTeam() {
+//     const { teamA, teamB, tossWinner, tossDecision } = matchData
+    
+//     if (currentInning === 1) {
+//       // First inning: team that won toss and chose to bat, OR team that lost toss but toss winner chose to bowl
+//       return (tossWinner === teamA.name && tossDecision === 'bat') || 
+//              (tossWinner === teamB.name && tossDecision === 'bowl') 
+//              ? teamA : teamB
+//     } else {
+//       // Second inning: opposite team from first inning
+//       const firstInningBattingTeam = (tossWinner === teamA.name && tossDecision === 'bat') || 
+//                                     (tossWinner === teamB.name && tossDecision === 'bowl') 
+//                                     ? teamA : teamB
+//       return firstInningBattingTeam === teamA ? teamB : teamA
+//     }
+//   }
 
-    setCurrentMatch(prev => {
-      const updatedPlayers = prev[key].players.map(player => {
-        if (player.player.id == playerId) {
-          return {
-            ...player,
-            runs: team === 'batting' ? runs : player.runs,
-            wickets: team === 'bowling' ? wickets : player.wickets
-          }
-        }
-        return player
-      })
+//   function getCurrentBowlingTeam() {
+//     const { teamA, teamB } = matchData
+//     return currentBattingTeam === teamA ? teamB : teamA
+//   }
 
-      return {
-        ...prev,
-        [key]: {
-          ...prev[key],
-          players: updatedPlayers
-        }
-      }
-    })
-  }
+//   const handleBall = (outcome: BallOutcome) => {
+//     if (isMatchComplete) return
 
-  const incrementRuns = (playerId: string | number, run: number) => {
-    const player = battingTeam.players.find(p => p.player.id === playerId)
-    if (!player) return
-    updatePlayerStats('batting', playerId, player.runs + run, player.wickets)
-  }
+//     const ballEvent: BallEvent = {
+//       runs: 0,
+//       isWicket: false,
+//       isExtra: false,
+//       batsmanName: selectedBatsman?.player.name,
+//       bowlerName: selectedBowler?.player.name
+//     }
 
-  const incrementWickets = (playerId: string | number) => {
-    const player = bowlingTeam.players.find(p => p.player.id === playerId)
-    if (!player) return
-    updatePlayerStats('bowling', playerId, player.runs, player.wickets + 1)
-  }
+//     // Process ball outcome
+//     switch (outcome) {
+//       case 'dot':
+//         ballEvent.runs = 0
+//         break
+//       case '1':
+//         ballEvent.runs = 1
+//         break
+//       case '2':
+//         ballEvent.runs = 2
+//         break
+//       case '3':
+//         ballEvent.runs = 3
+//         break
+//       case '4':
+//         ballEvent.runs = 4
+//         break
+//       case '6':
+//         ballEvent.runs = 6
+//         break
+//       case 'wide':
+//         ballEvent.runs = 1
+//         ballEvent.isExtra = true
+//         ballEvent.extraType = 'wide'
+//         break
+//       case 'noball':
+//         ballEvent.runs = 1
+//         ballEvent.isExtra = true
+//         ballEvent.extraType = 'noball'
+//         break
+//       case 'wicket':
+//         ballEvent.isWicket = true
+//         ballEvent.runs = 0
+//         break
+//     }
 
-  const teamScore = (teamKey: 'teamA' | 'teamB') =>
-    currentMatch[teamKey].players.reduce((sum, p) => sum + p.runs, 0)
+//     // Update stats
+//     const newStats = { ...currentStats }
+//     newStats.runs += ballEvent.runs
 
-  const teamWickets = (teamKey: 'teamA' | 'teamB') =>
-    teamKey === battingTeamKey
-      ? currentMatch[bowlingTeamKey].players.reduce((sum, p) => sum + p.wickets, 0)
-      : currentMatch[teamKey].players.reduce((sum, p) => sum + p.wickets, 0)
+//     if (ballEvent.isWicket) {
+//       newStats.wickets += 1
+//     }
 
-  const currentScore = teamScore(battingTeamKey)
-  const currentWickets = teamWickets(battingTeamKey)
-  const target = currentMatch.currentInning === 2 ? firstInningTotal + 1 : 0
+//     // Only increment balls/overs for legal deliveries
+//     if (!ballEvent.isExtra) {
+//       newStats.balls += 1
+//       newStats.ballsThisOver += 1
+      
+//       if (newStats.ballsThisOver === 6) {
+//         newStats.overs += 1
+//         newStats.ballsThisOver = 0
+//         // Over completed - update bowler restrictions
+//         setPreviousOverBowler(currentOverBowler)
+//         setCurrentOverBowler(null)
+//         setSelectedBowler(null) // Force selection of new bowler
+//       } else {
+//         // Set current over bowler if not set
+//         if (!currentOverBowler && selectedBowler) {
+//           setCurrentOverBowler(selectedBowler.player.id)
+//         }
+//       }
+//     }
 
-  const completeInning = () => {
-    const score = teamScore(battingTeamKey)
-    const anyRuns = battingTeam.players.some(p => p.runs > 0)
-    if (!anyRuns) {
-      alert("Cannot complete inning. No runs have been recorded.")
-      return
-    }
-    setFirstInningTotal(score)
-    setCurrentMatch(prev => ({ ...prev, currentInning: 2 }))
-  }
+//     // Update player stats
+//     if (selectedBatsman && (ballEvent.runs > 0 && !ballEvent.isExtra)) {
+//       updatePlayerStats(currentBattingTeam, selectedBatsman.player.id, ballEvent.runs, 0)
+//     }
 
-  const completeMatch = async () => {
-    setIsMatchCompleted(true)
+//     if (selectedBowler && ballEvent.isWicket) {
+//       updatePlayerStats(currentBowlingTeam, selectedBowler.player.id, 0, 1)
+//     }
 
-    const teamAScore = teamScore('teamA')
-    const teamBScore = teamScore('teamB')
-    let winner = ''
-    if (teamAScore > teamBScore) winner = currentMatch.teamA.name
-    else if (teamBScore > teamAScore) winner = currentMatch.teamB.name
-    else winner = 'Tie'
+//     // Handle wicket - auto-select next batsman
+//     if (ballEvent.isWicket) {
+//       selectNextBatsman()
+//     }
 
-    const allPlayers = [...currentMatch.teamA.players, ...currentMatch.teamB.players]
-    const manOfMatch = allPlayers.reduce((best, current) => {
-      const currentScore = current.runs + current.wickets
-      const bestScore = best.runs + best.wickets
-      return currentScore > bestScore ? current : best
-    })
+//     setCurrentStats(newStats)
+//     checkInningComplete(newStats)
+//   }
 
-    const matchToSave = {
-      ...currentMatch,
-      isCompleted: true,
-      winner,
-      manOfMatch: manOfMatch.player.name,
-      matchDate: dayjs().format('YYYY-MM-DD')
-    }
+//   const selectNextBatsman = () => {
+//     if (!selectedBatsman) return
+    
+//     // Add current batsman to dismissed list
+//     setDismissedBatsmen(prev => new Set(prev).add(selectedBatsman.player.id))
+    
+//     // Find the next available batsman who hasn't been dismissed
+//     const availableBatsmen = currentBattingTeam.players.filter(player => 
+//       !dismissedBatsmen.has(player.player.id) && 
+//       player.player.id !== selectedBatsman.player.id
+//     )
+    
+//     if (availableBatsmen.length > 0) {
+//       // Auto-select the first available batsman
+//       setSelectedBatsman(availableBatsmen[0])
+//     } else {
+//       // No more batsmen available
+//       setSelectedBatsman(null)
+//     }
+//   }
 
-    setSaving(true)
-    const savedMatch = await saveMatch(matchToSave)
-    setSaving(false)
+//   // Reset dismissed batsmen when inning changes
+//   useEffect(() => {
+//     setDismissedBatsmen(new Set())
+//     setSelectedBatsman(null)
+//     setSelectedBowler(null)
+//     setCurrentOverBowler(null)
+//     setPreviousOverBowler(null)
+//   }, [currentInning])
 
-    if (savedMatch) onMatchComplete()
-    else alert('Failed to save match.')
-  }
+//   // Get available batsmen (not dismissed)
+//   const getAvailableBatsmen = () => {
+//     return currentBattingTeam.players.filter(player => 
+//       !dismissedBatsmen.has(player.player.id)
+//     )
+//   }
 
-  useEffect(() => {
-    if (currentMatch.currentInning === 2 && currentScore >= target && !isMatchCompleted) {
-      completeMatch()
-    }
-  }, [currentScore, target])
+//   // Get available bowlers (not bowled previous over)
+//   const getAvailableBowlers = () => {
+//     if (currentStats.ballsThisOver === 0 && previousOverBowler) {
+//       // Start of new over - exclude previous over bowler
+//       return currentBowlingTeam.players.filter(player => 
+//         player.player.id !== previousOverBowler
+//       )
+//     } else if (currentOverBowler) {
+//       // Mid-over - must continue with same bowler
+//       return currentBowlingTeam.players.filter(player => 
+//         player.player.id === currentOverBowler
+//       )
+//     } else {
+//       // Can select any bowler
+//       return currentBowlingTeam.players
+//     }
+//   }
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="bg-white rounded-xl shadow-md p-6 text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          {currentMatch.teamA.name} vs {currentMatch.teamB.name}
-        </h1>
-        <p className="text-gray-600 text-sm">Inning {currentMatch.currentInning}</p>
-        {currentMatch.currentInning === 2 && (
-          <div className="mt-2 text-lg font-semibold text-orange-600">
-            Target: {target} runs
-          </div>
-        )}
-        <div className="text-4xl font-bold mt-2 text-blue-700">
-          {currentScore}/{currentWickets}
-        </div>
-      </div>
+//   const canChangeBowler = () => {
+//     return currentStats.ballsThisOver === 0 // Can only change at start of over
+//   }
 
-      {/* Batting Inputs */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">{battingTeam.name} Batting</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {battingTeam.players.map(player => (
-            <div key={player.player.id} className="border rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-3">{player.player.name}</h3>
-              <label className="block text-sm mb-1">Runs Scored</label>
-              <div className="flex items-center gap-2 mb-2">
-                {[1, 2, 3, 4, 6].map(r => (
-                  <button
-                    key={r}
-                    onClick={() => incrementRuns(player.player.id, r)}
-                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded"
-                    disabled={isMatchCompleted}
-                  >
-                    +{r}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="number"
-                min={0}
-                disabled={isMatchCompleted}
-                value={player.runs}
-                onChange={(e) =>
-                  updatePlayerStats('batting', player.player.id, parseInt(e.target.value) || 0, player.wickets)
-                }
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+//   const updatePlayerStats = (team: typeof currentBattingTeam, playerId: string | number, runs: number, wickets: number) => {
+//     setMatchData(prev => ({
+//       ...prev,
+//       [team === prev.teamA ? 'teamA' : 'teamB']: {
+//         ...team,
+//         players: team.players.map(p => 
+//           p.player.id === playerId 
+//             ? { ...p, runs: p.runs + runs, wickets: p.wickets + wickets }
+//             : p
+//         )
+//       }
+//     }))
+//   }
+//   const checkInningComplete = (stats: InningStats) => {
+//   // Include the current batsman if they were just out
+//   const remainingBatsmen = getAvailableBatsmen()
+//   const isAllOut = remainingBatsmen.length === 0
+//   const isOversComplete = stats.overs >= matchData.overs
+//   const target = inning1Stats.runs + 1
+//   const isTargetChased = currentInning === 2 && stats.runs >= target
 
-      {/* Bowling Inputs */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">{bowlingTeam.name} Bowling</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bowlingTeam.players.map(player => (
-            <div key={player.player.id} className="border rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-3">{player.player.name}</h3>
-              <label className="block text-sm mb-1">Wickets Taken</label>
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={() => incrementWickets(player.player.id)}
-                  className="px-2 py-1 bg-red-100 text-red-700 rounded"
-                  disabled={isMatchCompleted}
-                >
-                  +Wicket
-                </button>
-              </div>
-              <input
-                type="number"
-                min={0}
-                disabled={isMatchCompleted}
-                value={player.wickets}
-                onChange={(e) =>
-                  updatePlayerStats('bowling', player.player.id, player.runs, parseInt(e.target.value) || 0)
-                }
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+//   const isInningComplete = isAllOut || isOversComplete || isTargetChased
 
-      {/* Summary between Innings */}
-      {currentMatch.currentInning === 2 && (
-        <div className="text-center mt-4 bg-gray-100 p-4 rounded-lg">
-          <p className="text-gray-600">
-            <strong>{battingTeam.name}</strong> needs <strong>{target}</strong> runs to win.
-          </p>
-        </div>
-      )}
+//   if (isInningComplete) {
+//     if (currentInning === 1) {
+//       // First inning complete → start second inning
+//       setCurrentInning(2)
+//       setSelectedBatsman(null)
+//       setSelectedBowler(null)
+//       setDismissedBatsmen(new Set())
+//       setCurrentOverBowler(null)
+//       setPreviousOverBowler(null)
+//       // Optionally alert the target
+//       console.log(`First inning complete! Target for second inning: ${stats.runs + 1}`)
+//     } else {
+//       // Second inning complete → match finished
+//       completeMatch()
+//     }
+//   }
+// }
 
-      {/* Controls */}
-      <div className="text-center">
-        {currentMatch.currentInning === 1 ? (
-          <button
-            onClick={completeInning}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2 mx-auto"
-          >
-            <Target size={20} /> Complete First Inning
-          </button>
-        ) : (
-          <button
-            onClick={completeMatch}
-            disabled={saving || isMatchCompleted}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2 mx-auto"
-          >
-            <Save size={20} /> {saving ? 'Saving Match...' : 'Complete Match'}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
+
+//   const completeMatch = () => {
+//     const firstInningScore = inning1Stats.runs
+//     const secondInningScore = inning2Stats.runs
+//     const target = firstInningScore + 1
+    
+//     let matchWinner = ''
+    
+//     if (currentInning === 1) {
+//       // If first inning just ended (all out or overs completed), no winner yet
+//       // This shouldn't happen as we transition to inning 2
+//       matchWinner = 'Match Incomplete'
+//     } else {
+//       // Second inning completed
+//       if (secondInningScore >= target) {
+//         // Second inning team chased the target
+//         matchWinner = getCurrentBattingTeam().name
+//       } else {
+//         // Second inning team failed to chase target
+//         const firstInningTeam = getCurrentBowlingTeam().name
+//         matchWinner = firstInningTeam
+//       }
+//     }
+    
+//     setWinner(matchWinner)
+//     setIsMatchComplete(true)
+//     setShowMOMSelector(true)
+//   }
+
+//   const handleSaveMatch = async () => {
+//     if (!manOfMatch || isSaving) return
+
+//     setIsSaving(true)
+//     setError(null)
+
+//     try {
+//       const saveData: SaveMatchPayload = {
+//         teamA: matchData.teamA,
+//         teamB: matchData.teamB,
+//         overs: matchData.overs,
+//         tossWinner: matchData.tossWinner,
+//         tossDecision: matchData.tossDecision,
+//         winner,
+//         manOfMatch,
+//         matchDate: new Date().toISOString().split('T')[0],
+//         isCompleted: true
+//       }
+
+//       const result = await saveMatch(saveData)
+//       if (result) {
+//         onMatchComplete()
+//       } else {
+//         setError('Failed to save match')
+//       }
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : 'Failed to save match')
+//     } finally {
+//       setIsSaving(false)
+//     }
+//   }
+
+//   const getRequiredRunRate = () => {
+//     if (currentInning === 2 && !isMatchComplete) {
+//       const target = inning1Stats.runs + 1
+//       const remaining = target - inning2Stats.runs
+//       const ballsLeft = (matchData.overs - inning2Stats.overs) * 6 - inning2Stats.ballsThisOver
+//       return ballsLeft > 0 ? (remaining * 6 / ballsLeft).toFixed(2) : '0.00'
+//     }
+//     return '0.00'
+//   }
+
+//   const allPlayers = [...matchData.teamA.players, ...matchData.teamB.players]
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+//       <div className="max-w-7xl mx-auto space-y-6">
+//         {/* Header */}
+//         <div className="bg-white rounded-2xl shadow-lg p-6">
+//           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+//             <div className="flex items-center gap-3">
+//               <Trophy className="text-green-600" size={32} />
+//               <div>
+//                 <h1 className="text-2xl font-bold text-gray-800">
+//                   {matchData.teamA.name} vs {matchData.teamB.name}
+//                 </h1>
+//                 <p className="text-gray-600">
+//                   {matchData.overs} overs • {currentInning === 1 ? '1st' : '2nd'} Inning
+//                   {currentInning === 2 && (
+//                     <span className="ml-2 text-blue-600">
+//                       (Teams switched - {getCurrentBattingTeam().name} chasing {inning1Stats.runs + 1})
+//                     </span>
+//                   )}
+//                   {isMatchComplete && <span className="ml-2 text-green-600 font-semibold">Match Complete</span>}
+//                 </p>
+//               </div>
+//             </div>
+//             <button
+//               onClick={onCancel}
+//               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+//             >
+//               Exit Match
+//             </button>
+//           </div>
+//         </div>
+
+//         {/* Scoreboard */}
+//         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//           {/* Current Batting Team */}
+//           <div className="bg-white rounded-2xl shadow-lg p-6">
+//             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+//               <Target className="text-blue-600" />
+//               {currentBattingTeam.name} - Batting
+//             </h2>
+//             <div className="space-y-4">
+//               <div className="flex items-center justify-between">
+//                 <span className="text-3xl font-bold text-gray-800">
+//                   {currentStats.runs}/{currentStats.wickets}
+//                   {getAvailableBatsmen().length === 0 && (
+//                     <span className="ml-2 text-red-600 text-lg font-semibold">ALL OUT</span>
+//                   )}
+//                 </span>
+//                 <span className="text-lg text-gray-600">
+//                   ({currentStats.overs}.{currentStats.ballsThisOver} ov)
+//                 </span>
+//               </div>
+//               {currentInning === 2 && (
+//                 <div className="text-sm text-gray-600">
+//                   <p><strong>Target:</strong> {inning1Stats.runs + 1} runs</p>
+//                   <p><strong>Required:</strong> {Math.max(0, inning1Stats.runs + 1 - currentStats.runs)} runs</p>
+//                   <p><strong>RRR:</strong> {getRequiredRunRate()}</p>
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+
+//           {/* Previous/Bowling Team */}
+//           <div className="bg-white rounded-2xl shadow-lg p-6">
+//             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+//               <Clock className="text-red-600" />
+//               {currentInning === 1 
+//                 ? `${getCurrentBowlingTeam().name} - Bowling` 
+//                 : `${getCurrentBowlingTeam().name} - ${inning1Stats.runs}/${inning1Stats.wickets}`
+//               }
+//             </h2>
+//             {currentInning === 2 && (
+//               <div className="space-y-1">
+//                 <div className="text-lg text-gray-600">
+//                   ({inning1Stats.overs}.{inning1Stats.ballsThisOver} overs)
+//                 </div>
+//                 {getAvailableBatsmen().length === 0 && inning1Stats.wickets < 10 && (
+//                   <div className="text-sm text-red-600 font-semibold">
+//                     ALL OUT
+//                   </div>
+//                 )}
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         {!isMatchComplete && (
+//           <>
+//             {/* Player Selection */}
+//             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//               {/* Batsman Selection */}
+//               <div className="bg-white rounded-2xl shadow-lg p-6">
+//                 <h3 className="text-lg font-bold text-gray-800 mb-4">
+//                   Select Batsman ({getAvailableBatsmen().length} available)
+//                 </h3>
+//                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+//                   {currentBattingTeam.players.map(player => {
+//                     const isDismissed = dismissedBatsmen.has(player.player.id)
+//                     const isSelected = selectedBatsman?.player.id === player.player.id
+                    
+//                     return (
+//                       <button
+//                         key={player.player.id}
+//                         onClick={() => !isDismissed ? setSelectedBatsman(player) : null}
+//                         disabled={isDismissed}
+//                         className={`p-3 rounded-lg border text-left transition-all ${
+//                           isDismissed
+//                             ? 'border-red-300 bg-red-50 text-red-400 cursor-not-allowed'
+//                             : isSelected
+//                             ? 'border-green-500 bg-green-50 text-green-700'
+//                             : 'border-gray-300 hover:border-gray-400'
+//                         }`}
+//                       >
+//                         <div className="flex justify-between items-center">
+//                           <div>
+//                             <div className={`font-medium ${isDismissed ? 'line-through' : ''}`}>
+//                               {player.player.name}
+//                             </div>
+//                             <div className="text-sm text-gray-600">
+//                               {player.runs} runs
+//                               {isDismissed && <span className="ml-2 text-red-500 font-semibold">OUT</span>}
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </button>
+//                     )
+//                   })}
+//                 </div>
+//                 {getAvailableBatsmen().length === 0 && (
+//                   <p className="text-sm text-red-600 mt-2 text-center">
+//                     All batsmen are out!
+//                   </p>
+//                 )}
+//               </div>
+
+//               {/* Bowler Selection */}
+//               <div className="bg-white rounded-2xl shadow-lg p-6">
+//                 <h3 className="text-lg font-bold text-gray-800 mb-4">
+//                   Select Bowler ({getAvailableBowlers().length} available)
+//                 </h3>
+//                 {!canChangeBowler() && currentOverBowler && (
+//                   <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+//                     <p className="text-sm text-yellow-800">
+//                       Same bowler must complete the over
+//                     </p>
+//                   </div>
+//                 )}
+//                 {canChangeBowler() && previousOverBowler && (
+//                   <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+//                     <p className="text-sm text-blue-800">
+//                       Previous over bowler cannot bowl consecutive overs
+//                     </p>
+//                   </div>
+//                 )}
+//                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+//                   {currentBowlingTeam.players.map(player => {
+//                     const isAvailable = getAvailableBowlers().some(p => p.player.id === player.player.id)
+//                     const isSelected = selectedBowler?.player.id === player.player.id
+//                     const isPreviousBowler = player.player.id === previousOverBowler
+//                     const isCurrentBowler = player.player.id === currentOverBowler
+                    
+//                     return (
+//                       <button
+//                         key={player.player.id}
+//                         onClick={() => isAvailable ? setSelectedBowler(player) : null}
+//                         disabled={!isAvailable}
+//                         className={`p-3 rounded-lg border text-left transition-all ${
+//                           !isAvailable
+//                             ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
+//                             : isSelected
+//                             ? 'border-red-500 bg-red-50 text-red-700'
+//                             : 'border-gray-300 hover:border-gray-400'
+//                         }`}
+//                       >
+//                         <div className="flex justify-between items-center">
+//                           <div>
+//                             <div className="font-medium">{player.player.name}</div>
+//                             <div className="text-sm text-gray-600">
+//                               {player.wickets} wickets
+//                               {isPreviousBowler && canChangeBowler() && (
+//                                 <span className="ml-2 text-orange-600 text-xs">Previous over</span>
+//                               )}
+//                               {isCurrentBowler && !canChangeBowler() && (
+//                                 <span className="ml-2 text-blue-600 text-xs">Current over</span>
+//                               )}
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </button>
+//                     )
+//                   })}
+//                 </div>
+//                 {getAvailableBowlers().length === 0 && (
+//                   <p className="text-sm text-red-600 mt-2 text-center">
+//                     No available bowlers!
+//                   </p>
+//                 )}
+//               </div>
+//             </div>
+
+//             {/* Ball Actions */}
+//             <div className="bg-white rounded-2xl shadow-lg p-6">
+//               <h3 className="text-lg font-bold text-gray-800 mb-4">Ball Outcome</h3>
+//               <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+//                 {[
+//                   { outcome: 'dot' as BallOutcome, label: '0', color: 'gray' },
+//                   { outcome: '1' as BallOutcome, label: '1', color: 'blue' },
+//                   { outcome: '2' as BallOutcome, label: '2', color: 'blue' },
+//                   { outcome: '3' as BallOutcome, label: '3', color: 'blue' },
+//                   { outcome: '4' as BallOutcome, label: '4', color: 'green' },
+//                   { outcome: '6' as BallOutcome, label: '6', color: 'purple' },
+//                   { outcome: 'wide' as BallOutcome, label: 'WD', color: 'yellow' },
+//                   { outcome: 'noball' as BallOutcome, label: 'NB', color: 'orange' },
+//                   { outcome: 'wicket' as BallOutcome, label: 'OUT', color: 'red' }
+//                 ].map(({ outcome, label, color }) => (
+//                   <button
+//                     key={outcome}
+//                     onClick={() => handleBall(outcome)}
+//                     disabled={!selectedBatsman || !selectedBowler}
+//                     className={`p-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+//                       color === 'gray' ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' :
+//                       color === 'blue' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+//                       color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+//                       color === 'purple' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' :
+//                       color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+//                       color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+//                       'bg-red-100 text-red-800 hover:bg-red-200'
+//                     }`}
+//                   >
+//                     {label}
+//                   </button>
+//                 ))}
+//               </div>
+//               {(!selectedBatsman || !selectedBowler) && (
+//                 <p className="text-sm text-gray-500 mt-2">
+//                   Please select both batsman and bowler to continue
+//                 </p>
+//               )}
+//             </div>
+//           </>
+//         )}
+
+//         {/* Match Complete - Man of Match Selection */}
+//         {isMatchComplete && showMOMSelector && (
+//           <div className="bg-white rounded-2xl shadow-lg p-6">
+//             <div className="text-center mb-6">
+//               <Trophy className="mx-auto mb-4 text-yellow-500" size={48} />
+//               <h2 className="text-2xl font-bold text-gray-800">Match Complete!</h2>
+//               <p className="text-lg text-green-600 font-semibold">{winner} Won</p>
+//             </div>
+
+//             <div className="mb-6">
+//               <h3 className="text-lg font-bold text-gray-800 mb-4">Select Man of the Match</h3>
+//               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+//                 {allPlayers.map(player => (
+//                   <button
+//                     key={player.player.id}
+//                     onClick={() => setManOfMatch(player.player.name)}
+//                     className={`p-3 rounded-lg border text-left transition-all ${
+//                       manOfMatch === player.player.name
+//                         ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
+//                         : 'border-gray-300 hover:border-gray-400'
+//                     }`}
+//                   >
+//                     <div className="font-medium">{player.player.name}</div>
+//                     <div className="text-sm text-gray-600">
+//                       {player.runs} runs, {player.wickets} wickets
+//                     </div>
+//                   </button>
+//                 ))}
+//               </div>
+//             </div>
+
+//             {error && (
+//               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+//                 <AlertCircle size={16} />
+//                 {error}
+//               </div>
+//             )}
+
+//             <div className="flex flex-col sm:flex-row gap-3">
+//               <button
+//                 onClick={handleSaveMatch}
+//                 disabled={!manOfMatch || isSaving}
+//                 className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 
+//                          disabled:opacity-50 disabled:cursor-not-allowed transition-colors 
+//                          flex items-center justify-center gap-2 font-medium"
+//               >
+//                 {isSaving ? (
+//                   <>
+//                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+//                     Saving...
+//                   </>
+//                 ) : (
+//                   <>
+//                     <Save size={20} />
+//                     Save Match
+//                   </>
+//                 )}
+//               </button>
+//               <button
+//                 onClick={onCancel}
+//                 className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+//               >
+//                 Exit Without Saving
+//               </button>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
 

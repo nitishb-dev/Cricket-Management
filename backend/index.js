@@ -1,43 +1,46 @@
-import express from 'express'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import mysql from 'mysql2/promise'
-import { v4 as uuidv4 } from 'uuid'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mysql from "mysql2/promise";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-dotenv.config()
-const app = express()
-const PORT = process.env.PORT || 5000
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || '',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_NAME || 'cricket_management',
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "cricket_management",
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
-})
+  queueLimit: 0,
+});
 
 const initDatabase = async () => {
   try {
+    // Players table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS players (
-        id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        id VARCHAR(36) PRIMARY KEY,
         name VARCHAR(255) NOT NULL UNIQUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`)
+      )
+    `);
 
+    // Matches table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS matches (
-        id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        id VARCHAR(36) PRIMARY KEY,
         team_a_name VARCHAR(255) NOT NULL,
         team_b_name VARCHAR(255) NOT NULL,
         overs INT NOT NULL,
@@ -51,23 +54,13 @@ const initDatabase = async () => {
         man_of_match VARCHAR(255),
         match_date DATE DEFAULT (CURRENT_DATE),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`)
+      )
+    `);
 
-    const [columns] = await pool.query(`
-      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = 'match_player_stats' AND TABLE_SCHEMA = DATABASE()
-    `)
-
-    const columnNames = columns.map(col => col.COLUMN_NAME)
-    const missingColumns = ['ones', 'twos', 'threes', 'fours', 'sixes'].filter(col => !columnNames.includes(col))
-
-    for (const col of missingColumns) {
-      await pool.query(`ALTER TABLE match_player_stats ADD COLUMN ${col} INT DEFAULT 0`)
-    }
-
+    // Match player stats table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS match_player_stats (
-        id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        id VARCHAR(36) PRIMARY KEY,
         match_id VARCHAR(36),
         player_id VARCHAR(36),
         team VARCHAR(255),
@@ -81,44 +74,54 @@ const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
-      )`)
+      )
+    `);
 
-    console.log('✅ Database initialized')
+    console.log("✅ Database initialized");
   } catch (err) {
-    console.error('❌ DB Init Error:', err)
+    console.error("❌ DB Init Error:", err);
   }
-}
+};
 
-app.get('/api/players', async (req, res) => {
+// ----------------- ROUTES -----------------
+
+// Get all players
+app.get("/api/players", async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM players ORDER BY name')
-    res.json(rows)
+    const [rows] = await pool.query("SELECT * FROM players ORDER BY name");
+    res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
-app.post('/api/players', async (req, res) => {
-  const { name } = req.body
-  if (!name) return res.status(400).json({ error: 'Player name required' })
+// Create player
+app.post("/api/players", async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Player name required" });
 
   try {
-    await pool.query('INSERT INTO players (name) VALUES (?)', [name])
+    const id = uuidv4();
+    await pool.query("INSERT INTO players (id, name) VALUES (?, ?)", [
+      id,
+      name,
+    ]);
     const [player] = await pool.query(
-      'SELECT * FROM players WHERE name = ? ORDER BY created_at DESC LIMIT 1',
-      [name]
-    )
-    res.status(201).json(player[0])
+      "SELECT * FROM players WHERE id = ? LIMIT 1",
+      [id]
+    );
+    res.status(201).json(player[0]);
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      res.status(400).json({ error: 'Player already exists' })
+    if (err.code === "ER_DUP_ENTRY") {
+      res.status(400).json({ error: "Player already exists" });
     } else {
-      res.status(500).json({ error: err.message })
+      res.status(500).json({ error: err.message });
     }
   }
-})
+});
 
-app.get('/api/players/stats/all', async (req, res) => {
+// Get all player stats
+app.get("/api/players/stats/all", async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT
@@ -141,13 +144,13 @@ app.get('/api/players/stats/all', async (req, res) => {
       WHERE m.id IS NOT NULL
       GROUP BY p.id
       ORDER BY totalRuns DESC
-    `)
+    `);
 
-    const stats = rows.map(row => ({
+    const stats = rows.map((row) => ({
       player: {
         id: row.id,
         name: row.name,
-        created_at: row.created_at
+        created_at: row.created_at,
       },
       totalMatches: Number(row.totalMatches || 0),
       totalRuns: Number(row.totalRuns || 0),
@@ -158,113 +161,166 @@ app.get('/api/players/stats/all', async (req, res) => {
       fours: Number(row.fours || 0),
       sixes: Number(row.sixes || 0),
       totalWins: Number(row.totalWins || 0),
-      manOfMatchCount: Number(row.manOfMatchCount || 0)
-    }))
+      manOfMatchCount: Number(row.manOfMatchCount || 0),
+    }));
 
-    res.json(stats)
+    res.json(stats);
   } catch (err) {
-    console.error("Stats error:", err)
-    res.status(500).json({ error: err.message })
+    console.error("Stats error:", err);
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
 // Get all matches
-app.get('/api/matches', async (req, res) => {
+app.get("/api/matches", async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM matches ORDER BY created_at DESC')
-    res.json(rows)
+    const [rows] = await pool.query(
+      "SELECT * FROM matches ORDER BY created_at DESC"
+    );
+    res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
-// Get match player stats by match ID
-app.get('/api/matches/:id/stats', async (req, res) => {
-  const { id } = req.params
+// Get match stats by match ID
+app.get("/api/matches/:id/stats", async (req, res) => {
+  const { id } = req.params;
   try {
-    const [rows] = await pool.query(`
+    const [rows] = await pool.query(
+      `
       SELECT mps.*, p.name AS player_name
       FROM match_player_stats mps
       JOIN players p ON mps.player_id = p.id
       WHERE mps.match_id = ?
-    `, [id])
-    res.json(rows)
+    `,
+      [id]
+    );
+    res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
-// Delete a match by ID
-app.delete('/api/matches/:id', async (req, res) => {
-  const { id } = req.params
+// Delete match
+app.delete("/api/matches/:id", async (req, res) => {
+  const { id } = req.params;
   try {
-    const [result] = await pool.query('DELETE FROM matches WHERE id = ?', [id])
+    const [result] = await pool.query("DELETE FROM matches WHERE id = ?", [id]);
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Match not found' })
+      return res.status(404).json({ error: "Match not found" });
     }
-    res.json({ message: 'Match deleted successfully' })
+    res.json({ message: "Match deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
-})
+});
 
-
-app.post('/api/matches', async (req, res) => {
-  const connection = await pool.getConnection()
+// Save a match
+app.post("/api/matches", async (req, res) => {
+  const connection = await pool.getConnection();
   try {
-    const { teamA, teamB, overs, tossWinner, tossDecision, winner, manOfMatch, matchDate } = req.body
+    const {
+      teamA,
+      teamB,
+      overs,
+      tossWinner,
+      tossDecision,
+      winner,
+      manOfMatch,
+      matchDate,
+    } = req.body;
 
-    const teamAScore = teamA.players.reduce((sum, p) => sum + p.runs, 0)
-    const teamAWickets = teamA.players.reduce((sum, p) => sum + p.wickets, 0)
-    const teamBScore = teamB.players.reduce((sum, p) => sum + p.runs, 0)
-    const teamBWickets = teamB.players.reduce((sum, p) => sum + p.wickets, 0)
+    const matchId = uuidv4();
 
-    await connection.beginTransaction()
+    const teamAScore = teamA.players.reduce((sum, p) => sum + p.runs, 0);
+    const teamAWickets = teamA.players.reduce((sum, p) => sum + p.wickets, 0);
+    const teamBScore = teamB.players.reduce((sum, p) => sum + p.runs, 0);
+    const teamBWickets = teamB.players.reduce((sum, p) => sum + p.wickets, 0);
 
-    const [matchResult] = await connection.query(`
+    await connection.beginTransaction();
+
+    await connection.query(
+      `
       INSERT INTO matches (
-        team_a_name, team_b_name, overs, toss_winner, toss_decision,
+        id, team_a_name, team_b_name, overs, toss_winner, toss_decision,
         team_a_score, team_a_wickets, team_b_score, team_b_wickets,
         winner, man_of_match, match_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
       [
-        teamA.name, teamB.name, overs, tossWinner, tossDecision,
-        teamAScore, teamAWickets, teamBScore, teamBWickets,
-        winner, manOfMatch, matchDate
-      ])
+        matchId,
+        teamA.name,
+        teamB.name,
+        overs,
+        tossWinner,
+        tossDecision,
+        teamAScore,
+        teamAWickets,
+        teamBScore,
+        teamBWickets,
+        winner,
+        manOfMatch,
+        matchDate,
+      ]
+    );
 
-    const [matchRows] = await connection.query(
-      'SELECT * FROM matches WHERE team_a_name = ? AND team_b_name = ? ORDER BY created_at DESC LIMIT 1',
-      [teamA.name, teamB.name]
-    )
-    const match = matchRows[0]
-
+    // Insert players stats
     for (const p of teamA.players) {
       await connection.query(
-        'INSERT INTO match_player_stats (match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [match.id, p.player.id, teamA.name, p.runs, p.wickets, p.ones || 0, p.twos || 0, p.threes || 0, p.fours || 0, p.sixes || 0]
-      )
+        `INSERT INTO match_player_stats 
+          (id, match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          uuidv4(),
+          matchId,
+          p.player.id,
+          teamA.name,
+          p.runs,
+          p.wickets,
+          p.ones || 0,
+          p.twos || 0,
+          p.threes || 0,
+          p.fours || 0,
+          p.sixes || 0,
+        ]
+      );
     }
 
     for (const p of teamB.players) {
       await connection.query(
-        'INSERT INTO match_player_stats (match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [match.id, p.player.id, teamB.name, p.runs, p.wickets, p.ones || 0, p.twos || 0, p.threes || 0, p.fours || 0, p.sixes || 0]
-      )
+        `INSERT INTO match_player_stats 
+          (id, match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          uuidv4(),
+          matchId,
+          p.player.id,
+          teamB.name,
+          p.runs,
+          p.wickets,
+          p.ones || 0,
+          p.twos || 0,
+          p.threes || 0,
+          p.fours || 0,
+          p.sixes || 0,
+        ]
+      );
     }
 
-    await connection.commit()
-    res.status(201).json(match)
+    await connection.commit();
+    res.status(201).json({ id: matchId });
   } catch (err) {
-    await connection.rollback()
-    res.status(500).json({ error: err.message })
+    await connection.rollback();
+    console.error("❌ Match save error:", err);
+    res.status(500).json({ error: err.message });
   } finally {
-    connection.release()
+    connection.release();
   }
-})
+});
 
 initDatabase().then(() => {
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`)
-  })
-})
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  });
+});
