@@ -1,7 +1,7 @@
 // src/types/cricket.ts
 
 export interface Player {
-  id: string | number
+  id: string // Change to string
   name: string
   created_at: string
 }
@@ -21,6 +21,7 @@ export interface Match {
   man_of_match: string
   match_date: string
   created_at: string
+  is_completed: boolean // Add this line
 }
 
 export interface MatchPlayerStats {
@@ -30,6 +31,11 @@ export interface MatchPlayerStats {
   team: string
   runs: number
   wickets: number
+  ones: number // Add this
+  twos: number // Add this
+  threes: number // Add this
+  fours: number // Add this
+  sixes: number // Add this
   created_at: string
 }
 
@@ -38,6 +44,11 @@ export interface PlayerStats {
   totalMatches: number
   totalRuns: number
   totalWickets: number
+  ones: number // Add this
+  twos: number // Add this
+  threes: number // Add this
+  fours: number // Add this
+  sixes: number // Add this
   totalWins: number
   manOfMatchCount: number
 }
@@ -52,17 +63,6 @@ export interface MatchTeam {
   name: string
   players: TeamPlayer[]
 }
-
-// export interface MatchData {
-//   id?: string
-//   teamA: MatchTeam
-//   teamB: MatchTeam
-//   overs: number
-//   tossWinner: string
-//   tossDecision: "bat" | "bowl"
-//   currentInning: 1 | 2
-//   isCompleted: boolean
-// }
 
 export interface MatchData {
   id?: string
