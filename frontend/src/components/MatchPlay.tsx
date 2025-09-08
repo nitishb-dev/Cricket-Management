@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Trophy,
-  Target,
-  Clock,
-  Save,
-  AlertCircle,
-} from 'lucide-react'
+import { Trophy, Target, Clock, Save, AlertCircle } from 'lucide-react'
 import { useCricket, SaveMatchPayload } from '../context/CricketContext'
 import { MatchData, TeamPlayer } from '../types/cricket'
 
@@ -63,7 +57,6 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
   const [selectedBatsman, setSelectedBatsman] = useState<TeamPlayer | null>(null)
   const [selectedBowler, setSelectedBowler] = useState<TeamPlayer | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  //const [showMOMSelector, setShowMOMSelector] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const currentBattingTeam = getCurrentBattingTeam()
@@ -137,62 +130,67 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
         break
     }
 
-    const newStats = { ...currentStats }
-    newStats.runs += ballEvent.runs
+    // Create a new temporary state object to avoid race conditions
+    const newStats = { ...currentStats };
+    const newMatchData = { ...matchData };
 
+    // Update inning-level stats first
+    newStats.runs += ballEvent.runs;
     if (ballEvent.isWicket) {
-      newStats.wickets += 1
+      newStats.wickets += 1;
     }
-
     if (!ballEvent.isExtra) {
-      newStats.balls += 1
-      newStats.ballsThisOver += 1
-
-      if (newStats.ballsThisOver === 6) {
-        newStats.overs += 1
-        newStats.ballsThisOver = 0
-        setPreviousOverBowler(currentOverBowler)
-        setCurrentOverBowler(null)
-        setSelectedBowler(null)
-      } else {
-        if (!currentOverBowler && selectedBowler) {
-          setCurrentOverBowler(selectedBowler.player.id)
-        }
-      }
+      newStats.balls += 1;
+      newStats.ballsThisOver += 1;
     }
 
-    if (selectedBatsman && (ballEvent.runs > 0 && !ballEvent.isExtra)) {
-      updatePlayerStats(currentBattingTeam, selectedBatsman.player.id, ballEvent.runs, 0)
+    // Now, update the player-level stats inside the matchData object
+    const battingTeamKey = currentBattingTeam === newMatchData.teamA ? 'teamA' : 'teamB';
+    const bowlingTeamKey = currentBowlingTeam === newMatchData.teamA ? 'teamA' : 'teamB';
+
+    if (selectedBatsman) {
+      newMatchData[battingTeamKey] = {
+        ...newMatchData[battingTeamKey],
+        players: newMatchData[battingTeamKey].players.map(p =>
+          p.player.id === selectedBatsman.player.id ? { ...p, runs: p.runs + ballEvent.runs } : p
+        )
+      };
     }
 
     if (selectedBowler && ballEvent.isWicket) {
-      updatePlayerStats(currentBowlingTeam, selectedBowler.player.id, 0, 1)
+      newMatchData[bowlingTeamKey] = {
+        ...newMatchData[bowlingTeamKey],
+        players: newMatchData[bowlingTeamKey].players.map(p =>
+          p.player.id === selectedBowler.player.id ? { ...p, wickets: p.wickets + 1 } : p
+        )
+      };
     }
 
-    if (ballEvent.isWicket) {
-      selectNextBatsman()
-    }
-
-    setCurrentStats(newStats)
-    checkInningComplete(newStats)
-  }
-
-  const selectNextBatsman = () => {
-    if (!selectedBatsman) return
-
-    setDismissedBatsmen(prev => new Set(prev).add(selectedBatsman.player.id))
-
-    const availableBatsmen = currentBattingTeam.players.filter(player =>
-      !dismissedBatsmen.has(player.player.id) &&
-      player.player.id !== selectedBatsman.player.id
-    )
-
-    if (availableBatsmen.length > 0) {
-      setSelectedBatsman(availableBatsmen[0])
+    // Handle end of over logic
+    if (!ballEvent.isExtra && newStats.ballsThisOver === 6) {
+      newStats.overs += 1;
+      newStats.ballsThisOver = 0;
+      setPreviousOverBowler(currentOverBowler);
+      setCurrentOverBowler(null);
+      setSelectedBowler(null);
     } else {
-      setSelectedBatsman(null)
+      if (!currentOverBowler && selectedBowler) {
+        setCurrentOverBowler(selectedBowler.player.id);
+      }
     }
-  }
+
+    // Update dismissed batsmen and reset batsman selection
+    if (ballEvent.isWicket) {
+      setDismissedBatsmen(prev => new Set(prev).add(selectedBatsman!.player.id));
+      setSelectedBatsman(null); // Force user to re-select
+    }
+
+    // Set all new states at once to ensure synchronization
+    setCurrentStats(newStats);
+    setMatchData(newMatchData);
+
+    checkInningComplete(newStats);
+  };
 
   useEffect(() => {
     setDismissedBatsmen(new Set())
@@ -226,26 +224,15 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     return currentStats.ballsThisOver === 0
   }
 
-  const updatePlayerStats = (team: typeof currentBattingTeam, playerId: string | number, runs: number, wickets: number) => {
-    setMatchData(prev => ({
-      ...prev,
-      [team === prev.teamA ? 'teamA' : 'teamB']: {
-        ...team,
-        players: team.players.map(p =>
-          p.player.id === playerId
-            ? { ...p, runs: p.runs + runs, wickets: p.wickets + wickets }
-            : p
-        )
-      }
-    }))
-  }
-
   const checkInningComplete = (stats: InningStats) => {
     const currentBattingTeamPlayersCount = currentBattingTeam.players.length;
-    const isAllOut = stats.wickets >= (currentBattingTeamPlayersCount - 1);
+    
+    // Corrected "all out" condition: The inning ends when all but one batsman have been dismissed.
+    // For a team of 3 players, the inning ends on the 2nd wicket.
+    const isAllOut = stats.wickets >= currentBattingTeamPlayersCount;
     
     const isOversComplete = stats.overs >= matchData.overs;
-    const isTargetChased = currentInning === 2 && stats.runs >= (inning1Stats.runs + 1);
+    const isTargetChased = currentInning === 2 && stats.runs > inning1Stats.runs;
 
     const isInningComplete = isAllOut || isOversComplete || isTargetChased;
 
@@ -257,48 +244,57 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
             setDismissedBatsmen(new Set());
             setCurrentOverBowler(null);
             setPreviousOverBowler(null);
-            console.log(`First inning complete! Target for second inning: ${stats.runs + 1}`);
         } else {
             completeMatch();
         }
     }
-  };
+};
 
-  const completeMatch = () => {
-    const firstInningTeam = getCurrentBowlingTeam();
-    const secondInningTeam = getCurrentBattingTeam();
-    const firstInningScore = inning1Stats.runs;
-    const secondInningScore = inning2Stats.runs;
-    let matchWinner = '';
+const completeMatch = () => {
+  const teamAScore = inning1Stats.runs;
+  const teamBScore = inning2Stats.runs;
+  let matchWinner = '';
 
-    if (secondInningScore === firstInningScore) {
+  if (currentInning === 2) {
+    const target = teamAScore + 1;
+
+    if (teamBScore >= target) {
+      matchWinner = `${matchData.teamB.name} won the match`;
+    } else if (teamBScore === teamAScore) {
       matchWinner = 'Match Tied';
-    } else if (secondInningScore > firstInningScore) {
-      matchWinner = secondInningTeam.name;
     } else {
-      matchWinner = firstInningTeam.name;
+      matchWinner = `${matchData.teamA.name} won the match`;
     }
-    setWinner(matchWinner);
-    setIsMatchComplete(true);
+  } else {
+    // fallback if match somehow ended in first innings
+    if (teamAScore === teamBScore) {
+      matchWinner = 'Match Tied';
+    } else if (teamAScore > teamBScore) {
+      matchWinner = `${matchData.teamA.name} won the match`;
+    } else {
+      matchWinner = `${matchData.teamB.name} won the match`;
+    }
+  }
 
-    // --- NEW LOGIC TO DETERMINE MAN OF THE MATCH ---
-    let bestPerformanceScore = -1;
-    let manOfMatchPlayerName = '';
+  setWinner(matchWinner);
+  setIsMatchComplete(true);
 
-    const allPlayers = [...matchData.teamA.players, ...matchData.teamB.players];
+  // man of match logic stays same
+  let bestPerformanceScore = -1;
+  let manOfMatchPlayerName = '';
+  const allPlayers = [...matchData.teamA.players, ...matchData.teamB.players];
+  allPlayers.forEach(player => {
+    const playerScore = player.runs + (player.wickets * 15);
+    if (playerScore > bestPerformanceScore) {
+      bestPerformanceScore = playerScore;
+      manOfMatchPlayerName = player.player.name;
+    }
+  });
+  setManOfMatch(manOfMatchPlayerName);
+};
 
-    allPlayers.forEach(player => {
-      const playerScore = player.runs + (player.wickets * 15);
 
-      if (playerScore > bestPerformanceScore) {
-        bestPerformanceScore = playerScore;
-        manOfMatchPlayerName = player.player.name;
-      }
-    });
 
-    setManOfMatch(manOfMatchPlayerName);
-    //setShowMOMSelector(false);
-  };
 
   const handleSaveMatch = async () => {
     if (isSaving) return
@@ -342,8 +338,6 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     }
     return '0.00'
   }
-
- // const allPlayers = [...matchData.teamA.players, ...matchData.teamB.players]
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -421,7 +415,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
                 <div className="text-lg text-gray-600">
                   ({inning1Stats.overs}.{inning1Stats.ballsThisOver} overs)
                 </div>
-                {getAvailableBatsmen().length === 0 && inning1Stats.wickets < 10 && (
+                {inning1Stats.wickets >= matchData.teamA.players.length - 1 && (
                   <div className="text-sm text-red-600 font-semibold">
                     ALL OUT
                   </div>

@@ -64,6 +64,8 @@ export interface MatchTeam {
   players: TeamPlayer[]
 }
 
+
+
 export interface MatchData {
   id?: string
   teamA: MatchTeam
