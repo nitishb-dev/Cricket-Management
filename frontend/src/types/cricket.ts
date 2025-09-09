@@ -79,6 +79,9 @@ export interface MatchData {
   // New optional fields to track inning stats
   inning1Stats?: InningStats
   inning2Stats?: InningStats
+
+  inning1BattingTeam?: "A" | "B"
+  
 }
 
 export interface InningStats {
