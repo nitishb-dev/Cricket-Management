@@ -10,25 +10,11 @@ import {
   Match,
   PlayerStats,
   MatchPlayerStats,
-  MatchData,
+  SaveMatchPayload, // <-- Import these two types
+  SaveMatchResponse, // <-- from your cricket.ts file
 } from '../types/cricket'
 
 const API_BASE_URL = 'http://localhost:5000/api'
-
-/** The payload your backend expects when saving a match */
-export type SaveMatchPayload = Omit<MatchData, 'currentInning' | 'id'> & {
-  /** winner team name */
-  winner: string
-  /** Man of the Match player name */
-  manOfMatch: string
-  /** YYYY-MM-DD */
-  matchDate: string
-  /** Boolean to indicate if the match is completed */
-  isCompleted: boolean
-}
-
-/** What the backend actually returns on POST /api/matches */
-type SaveMatchResponse = { id: string }
 
 interface CricketContextType {
   players: Player[]
@@ -38,6 +24,8 @@ interface CricketContextType {
 
   // Player operations
   addPlayer: (name: string) => Promise<Player | null>
+  updatePlayer: (id: string, name: string) => Promise<Player | null>
+  deletePlayer: (id: string) => Promise<void>
   getPlayerStats: (playerId: string) => Promise<PlayerStats | null>
   getAllPlayerStats: () => Promise<PlayerStats[]>
 
@@ -90,6 +78,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   }
 
+  // ---- Player operations ----
   const addPlayer = async (name: string): Promise<Player | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/players`, {
@@ -110,6 +99,39 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   }
 
+  const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update player')
+      }
+      const data: Player = await response.json()
+      await refreshData()
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update player')
+      return null
+    }
+  }
+
+  const deletePlayer = async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Failed to delete player')
+      await refreshData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete player')
+    }
+  }
+
+  // ---- Match operations ----
   const saveMatch = async (
     matchData: SaveMatchPayload
   ): Promise<SaveMatchResponse | null> => {
@@ -160,19 +182,41 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   }
 
+  // const getPlayerStats = async (
+  //   playerId: string
+  // ): Promise<PlayerStats | null> => {
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`)
+  //     if (!response.ok) throw new Error('Failed to fetch player stats')
+  //     const data: PlayerStats = await response.json()
+  //     return data
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : 'Failed to fetch player stats')
+  //     return null
+  //   }
+  // }
   const getPlayerStats = async (
-    playerId: string
-  ): Promise<PlayerStats | null> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`)
-      if (!response.ok) throw new Error('Failed to fetch player stats')
-      const data: PlayerStats = await response.json()
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch player stats')
-      return null
+  playerId: string
+): Promise<PlayerStats | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`);
+    
+    // Explicitly check for a 404 response
+    if (response.status === 404) {
+      setError(`Player with ID ${playerId} not found.`);
+      return null;
     }
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch player stats');
+    }
+    const data: PlayerStats = await response.json();
+    return data;
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to fetch player stats');
+    return null;
   }
+};
 
   const getAllPlayerStats = async (): Promise<PlayerStats[]> => {
     try {
@@ -196,6 +240,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     loading,
     error,
     addPlayer,
+    updatePlayer,
+    deletePlayer,
     getPlayerStats,
     getAllPlayerStats,
     saveMatch,
@@ -203,8 +249,6 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     deleteMatch,
     refreshData
   }
-
-  
 
   return (
     <CricketContext.Provider value={value}>
