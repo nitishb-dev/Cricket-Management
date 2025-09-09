@@ -217,11 +217,6 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 - Change the PORT in `backend/.env` if 5000 is busy
 - Change the frontend port in `frontend/vite.config.ts` if 5173 is busy
 
-### PowerShell Issues
-If you encounter PowerShell execution policy issues:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
 
 ## 🎉 Features Implemented
 
@@ -235,7 +230,3 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - ✅ Player statistics tracking
 - ✅ Rematch functionality
 - ✅ Responsive mobile-first design
-
-## 📝 License
-
-This project is licensed under the ISC License. 
