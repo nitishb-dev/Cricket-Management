@@ -224,77 +224,85 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     return currentStats.ballsThisOver === 0
   }
 
-  const checkInningComplete = (stats: InningStats) => {
-    const currentBattingTeamPlayersCount = currentBattingTeam.players.length;
-    
-    // Corrected "all out" condition: The inning ends when all but one batsman have been dismissed.
-    // For a team of 3 players, the inning ends on the 2nd wicket.
-    const isAllOut = stats.wickets >= currentBattingTeamPlayersCount;
-    
-    const isOversComplete = stats.overs >= matchData.overs;
-    const isTargetChased = currentInning === 2 && stats.runs > inning1Stats.runs;
 
-    const isInningComplete = isAllOut || isOversComplete || isTargetChased;
+//TRYING-------------------------------------------------------------
 
-    if (isInningComplete) {
-        if (currentInning === 1) {
-            setCurrentInning(2);
-            setSelectedBatsman(null);
-            setSelectedBowler(null);
-            setDismissedBatsmen(new Set());
-            setCurrentOverBowler(null);
-            setPreviousOverBowler(null);
-        } else {
-            completeMatch();
-        }
-    }
-};
+const checkInningComplete = (stats: InningStats) => {
+  const currentBattingTeamPlayersCount = currentBattingTeam.players.length;
 
-const completeMatch = () => {
-  const teamAScore = inning1Stats.runs;
-  const teamBScore = inning2Stats.runs;
-  let matchWinner = '';
+  const isAllOut = stats.wickets >= currentBattingTeamPlayersCount;
+  const isOversComplete = stats.overs >= matchData.overs;
+  const isTargetChased = currentInning === 2 && stats.runs > (inning1Stats?.runs || 0);
 
-  if (currentInning === 2) {
-    const target = teamAScore + 1;
+  const isInningComplete = isAllOut || isOversComplete || isTargetChased;
 
-    if (teamBScore >= target) {
-      matchWinner = `${matchData.teamB.name} won the match`;
-    } else if (teamBScore === teamAScore) {
-      matchWinner = 'Match Tied';
+  if (isInningComplete) {
+    if (currentInning === 1) {
+      setCurrentInning(2);
+      setSelectedBatsman(null);
+      setSelectedBowler(null);
+      setDismissedBatsmen(new Set());
+      setCurrentOverBowler(null);
+      setPreviousOverBowler(null);
     } else {
-      matchWinner = `${matchData.teamA.name} won the match`;
-    }
-  } else {
-    // fallback if match somehow ended in first innings
-    if (teamAScore === teamBScore) {
-      matchWinner = 'Match Tied';
-    } else if (teamAScore > teamBScore) {
-      matchWinner = `${matchData.teamA.name} won the match`;
-    } else {
-      matchWinner = `${matchData.teamB.name} won the match`;
+      // 🚀 Pass the latest stats directly
+      completeMatch(stats, inning1Stats);
     }
   }
+};
+
+const completeMatch = (secondInningStats: InningStats, firstInningStats: InningStats) => {
+  const firstInningScore = firstInningStats.runs;
+  const secondInningScore = secondInningStats.runs;
+
+  console.log("=== MATCH COMPLETION DEBUG ===");
+  console.log("First inning score:", firstInningScore);
+  console.log("Second inning score:", secondInningScore);
+
+  const teamThatBattedFirst =
+    matchData.tossDecision === "bat"
+      ? matchData.tossWinner === matchData.teamA.name
+        ? matchData.teamA
+        : matchData.teamB
+      : matchData.tossWinner === matchData.teamA.name
+      ? matchData.teamB
+      : matchData.teamA;
+
+  const teamThatChased =
+    teamThatBattedFirst.name === matchData.teamA.name ? matchData.teamB : matchData.teamA;
+
+  let matchWinner = "";
+
+  if (secondInningScore > firstInningScore) {
+    const totalPlayers = teamThatChased.players.length;
+    const wicketsLeft = totalPlayers - secondInningStats.wickets;
+    matchWinner = `${teamThatChased.name} won the match by ${wicketsLeft} wickets`;
+  } else if (firstInningScore > secondInningScore) {
+    const runDifference = firstInningScore - secondInningScore;
+    matchWinner = `${teamThatBattedFirst.name} won the match by ${runDifference} runs`;
+  } else {
+    matchWinner = "Match Tied";
+  }
+
+  console.log("Final winner:", matchWinner);
 
   setWinner(matchWinner);
   setIsMatchComplete(true);
-
-  // man of match logic stays same
+  // Simple Man of the Match logic
   let bestPerformanceScore = -1;
-  let manOfMatchPlayerName = '';
+  let manOfMatchPlayerName = "";
   const allPlayers = [...matchData.teamA.players, ...matchData.teamB.players];
-  allPlayers.forEach(player => {
-    const playerScore = player.runs + (player.wickets * 15);
+
+  allPlayers.forEach((player) => {
+    const playerScore = player.runs + player.wickets * 15;
     if (playerScore > bestPerformanceScore) {
       bestPerformanceScore = playerScore;
       manOfMatchPlayerName = player.player.name;
     }
   });
+
   setManOfMatch(manOfMatchPlayerName);
 };
-
-
-
 
   const handleSaveMatch = async () => {
     if (isSaving) return
@@ -333,7 +341,8 @@ const completeMatch = () => {
     if (currentInning === 2 && !isMatchComplete) {
       const target = inning1Stats.runs + 1
       const remaining = target - inning2Stats.runs
-      const ballsLeft = (matchData.overs - inning2Stats.overs) * 6 - inning2Stats.ballsThisOver
+      // const ballsLeft = (matchData.overs - inning2Stats.overs) * 6 - inning2Stats.ballsThisOver
+      const ballsLeft = Math.max(0, (matchData.overs * 6) - (inning2Stats.overs * 6 + inning2Stats.ballsThisOver));
       return ballsLeft > 0 ? (remaining * 6 / ballsLeft).toFixed(2) : '0.00'
     }
     return '0.00'
@@ -573,10 +582,10 @@ const completeMatch = () => {
                 ))}
               </div>
               {(!selectedBatsman || !selectedBowler) && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Please select both batsman and bowler to continue
-                </p>
-              )}
+  <p className="text-sm text-gray-500 mt-3">
+    Please select both a batsman and a bowler to record the ball outcome.
+  </p>
+)}
             </div>
           </>
         )}
