@@ -1,330 +1,3 @@
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-// import mysql from "mysql2/promise";
-// import { v4 as uuidv4 } from "uuid";
-// import path from "path";
-// import { fileURLToPath } from "url";
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// dotenv.config();
-// const app = express();
-// const PORT = process.env.PORT || 5000;
-
-// app.use(cors());
-// app.use(express.json());
-
-// const pool = mysql.createPool({
-//   host: process.env.DB_HOST || "localhost",
-//   user: process.env.DB_USER || "root",
-//   password: process.env.DB_PASSWORD || "",
-//   database: process.env.DB_NAME || "cricket_management",
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-// });
-
-// const initDatabase = async () => {
-//   try {
-//     // Players table
-//     await pool.query(`
-//       CREATE TABLE IF NOT EXISTS players (
-//         id VARCHAR(36) PRIMARY KEY,
-//         name VARCHAR(255) NOT NULL UNIQUE,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       )
-//     `);
-
-//     // Matches table
-//     await pool.query(`
-//       CREATE TABLE IF NOT EXISTS matches (
-//         id VARCHAR(36) PRIMARY KEY,
-//         team_a_name VARCHAR(255) NOT NULL,
-//         team_b_name VARCHAR(255) NOT NULL,
-//         overs INT NOT NULL,
-//         toss_winner VARCHAR(255),
-//         toss_decision VARCHAR(10),
-//         team_a_score INT DEFAULT 0,
-//         team_a_wickets INT DEFAULT 0,
-//         team_b_score INT DEFAULT 0,
-//         team_b_wickets INT DEFAULT 0,
-//         winner VARCHAR(255),
-//         man_of_match VARCHAR(255),
-//         match_date DATE DEFAULT (CURRENT_DATE),
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       )
-//     `);
-
-//     // Match player stats table
-//     await pool.query(`
-//       CREATE TABLE IF NOT EXISTS match_player_stats (
-//         id VARCHAR(36) PRIMARY KEY,
-//         match_id VARCHAR(36),
-//         player_id VARCHAR(36),
-//         team VARCHAR(255),
-//         runs INT DEFAULT 0,
-//         wickets INT DEFAULT 0,
-//         ones INT DEFAULT 0,
-//         twos INT DEFAULT 0,
-//         threes INT DEFAULT 0,
-//         fours INT DEFAULT 0,
-//         sixes INT DEFAULT 0,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//         FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-//         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
-//       )
-//     `);
-
-//     console.log("✅ Database initialized");
-//   } catch (err) {
-//     console.error("❌ DB Init Error:", err);
-//   }
-// };
-
-// // ----------------- ROUTES -----------------
-
-// // Get all players
-// app.get("/api/players", async (req, res) => {
-//   try {
-//     const [rows] = await pool.query("SELECT * FROM players ORDER BY name");
-//     res.json(rows);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // Create player
-// app.post("/api/players", async (req, res) => {
-//   const { name } = req.body;
-//   if (!name) return res.status(400).json({ error: "Player name required" });
-
-//   try {
-//     const id = uuidv4();
-//     await pool.query("INSERT INTO players (id, name) VALUES (?, ?)", [
-//       id,
-//       name,
-//     ]);
-//     const [player] = await pool.query(
-//       "SELECT * FROM players WHERE id = ? LIMIT 1",
-//       [id]
-//     );
-//     res.status(201).json(player[0]);
-//   } catch (err) {
-//     if (err.code === "ER_DUP_ENTRY") {
-//       res.status(400).json({ error: "Player already exists" });
-//     } else {
-//       res.status(500).json({ error: err.message });
-//     }
-//   }
-// });
-
-// // Get all player stats
-// app.get("/api/players/stats/all", async (req, res) => {
-//   try {
-//     const [rows] = await pool.query(`
-//       SELECT
-//         p.id,
-//         p.name,
-//         p.created_at,
-//         COUNT(DISTINCT mps.match_id) AS totalMatches,
-//         COALESCE(SUM(mps.runs), 0) AS totalRuns,
-//         COALESCE(SUM(mps.wickets), 0) AS totalWickets,
-//         COALESCE(SUM(mps.ones), 0) AS ones,
-//         COALESCE(SUM(mps.twos), 0) AS twos,
-//         COALESCE(SUM(mps.threes), 0) AS threes,
-//         COALESCE(SUM(mps.fours), 0) AS fours,
-//         COALESCE(SUM(mps.sixes), 0) AS sixes,
-//         COALESCE(SUM(CASE WHEN m.winner = mps.team THEN 1 ELSE 0 END), 0) AS totalWins,
-//         COALESCE(SUM(CASE WHEN m.man_of_match = p.name THEN 1 ELSE 0 END), 0) AS manOfMatchCount
-//       FROM players p
-//       LEFT JOIN match_player_stats mps ON p.id = mps.player_id
-//       LEFT JOIN matches m ON m.id = mps.match_id
-//       WHERE m.id IS NOT NULL
-//       GROUP BY p.id
-//       ORDER BY totalRuns DESC
-//     `);
-
-//     const stats = rows.map((row) => ({
-//       player: {
-//         id: row.id,
-//         name: row.name,
-//         created_at: row.created_at,
-//       },
-//       totalMatches: Number(row.totalMatches || 0),
-//       totalRuns: Number(row.totalRuns || 0),
-//       totalWickets: Number(row.totalWickets || 0),
-//       ones: Number(row.ones || 0),
-//       twos: Number(row.twos || 0),
-//       threes: Number(row.threes || 0),
-//       fours: Number(row.fours || 0),
-//       sixes: Number(row.sixes || 0),
-//       totalWins: Number(row.totalWins || 0),
-//       manOfMatchCount: Number(row.manOfMatchCount || 0),
-//     }));
-
-//     res.json(stats);
-//   } catch (err) {
-//     console.error("Stats error:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // Get all matches
-// app.get("/api/matches", async (req, res) => {
-//   try {
-//     const [rows] = await pool.query(
-//       "SELECT * FROM matches ORDER BY created_at DESC"
-//     );
-//     res.json(rows);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // Get match stats by match ID
-// app.get("/api/matches/:id/stats", async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const [rows] = await pool.query(
-//       `
-//       SELECT mps.*, p.name AS player_name
-//       FROM match_player_stats mps
-//       JOIN players p ON mps.player_id = p.id
-//       WHERE mps.match_id = ?
-//     `,
-//       [id]
-//     );
-//     res.json(rows);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // Delete match
-// app.delete("/api/matches/:id", async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const [result] = await pool.query("DELETE FROM matches WHERE id = ?", [id]);
-//     if (result.affectedRows === 0) {
-//       return res.status(404).json({ error: "Match not found" });
-//     }
-//     res.json({ message: "Match deleted successfully" });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-// // Save a match
-// app.post("/api/matches", async (req, res) => {
-//   const connection = await pool.getConnection();
-//   try {
-//     const {
-//       teamA,
-//       teamB,
-//       overs,
-//       tossWinner,
-//       tossDecision,
-//       winner,
-//       manOfMatch,
-//       matchDate,
-//     } = req.body;
-
-//     const matchId = uuidv4();
-
-//     const teamAScore = teamA.players.reduce((sum, p) => sum + p.runs, 0);
-//     const teamAWickets = teamA.players.reduce((sum, p) => sum + p.wickets, 0);
-//     const teamBScore = teamB.players.reduce((sum, p) => sum + p.runs, 0);
-//     const teamBWickets = teamB.players.reduce((sum, p) => sum + p.wickets, 0);
-
-//     await connection.beginTransaction();
-
-//     await connection.query(
-//       `
-//       INSERT INTO matches (
-//         id, team_a_name, team_b_name, overs, toss_winner, toss_decision,
-//         team_a_score, team_a_wickets, team_b_score, team_b_wickets,
-//         winner, man_of_match, match_date
-//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-//     `,
-//       [
-//         matchId,
-//         teamA.name,
-//         teamB.name,
-//         overs,
-//         tossWinner,
-//         tossDecision,
-//         teamAScore,
-//         teamAWickets,
-//         teamBScore,
-//         teamBWickets,
-//         winner,
-//         manOfMatch,
-//         matchDate,
-//       ]
-//     );
-
-//     // Insert players stats
-//     for (const p of teamA.players) {
-//       await connection.query(
-//         `INSERT INTO match_player_stats 
-//           (id, match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) 
-//          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//         [
-//           uuidv4(),
-//           matchId,
-//           p.player.id,
-//           teamA.name,
-//           p.runs,
-//           p.wickets,
-//           p.ones || 0,
-//           p.twos || 0,
-//           p.threes || 0,
-//           p.fours || 0,
-//           p.sixes || 0,
-//         ]
-//       );
-//     }
-
-//     for (const p of teamB.players) {
-//       await connection.query(
-//         `INSERT INTO match_player_stats 
-//           (id, match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) 
-//          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//         [
-//           uuidv4(),
-//           matchId,
-//           p.player.id,
-//           teamB.name,
-//           p.runs,
-//           p.wickets,
-//           p.ones || 0,
-//           p.twos || 0,
-//           p.threes || 0,
-//           p.fours || 0,
-//           p.sixes || 0,
-//         ]
-//       );
-//     }
-
-//     await connection.commit();
-//     res.status(201).json({ id: matchId });
-//   } catch (err) {
-//     await connection.rollback();
-//     console.error("❌ Match save error:", err);
-//     res.status(500).json({ error: err.message });
-//   } finally {
-//     connection.release();
-//   }
-// });
-
-// initDatabase().then(() => {
-//   app.listen(PORT, () => {
-//     console.log(`🚀 Server running at http://localhost:${PORT}`);
-//   });
-// });
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -448,6 +121,65 @@ app.post("/api/players", async (req, res) => {
   }
 });
 
+// GET route for a single player's stats by ID
+app.get("/api/players/stats/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT
+        p.id,
+        p.name,
+        COALESCE(SUM(mps.runs), 0) AS totalRuns,
+        COALESCE(SUM(mps.wickets), 0) AS totalWickets,
+        COALESCE(SUM(mps.ones), 0) AS ones,
+        COALESCE(SUM(mps.twos), 0) AS twos,
+        COALESCE(SUM(mps.threes), 0) AS threes,
+        COALESCE(SUM(mps.fours), 0) AS fours,
+        COALESCE(SUM(mps.sixes), 0) AS sixes,
+        COUNT(DISTINCT mps.match_id) AS totalMatches,
+        COALESCE(SUM(CASE WHEN m.winner = mps.team THEN 1 ELSE 0 END), 0) AS totalWins,
+        COALESCE(SUM(CASE WHEN m.man_of_match = p.name THEN 1 ELSE 0 END), 0) AS manOfMatchCount
+      FROM players p
+      LEFT JOIN match_player_stats mps ON p.id = mps.player_id
+      LEFT JOIN matches m ON m.id = mps.match_id
+      WHERE p.id = ?
+      GROUP BY p.id
+      LIMIT 1;
+    `,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      // If no player is found, return a 404
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const row = rows[0];
+    const stats = {
+      player: {
+        id: row.id,
+        name: row.name,
+      },
+      totalMatches: Number(row.totalMatches || 0),
+      totalRuns: Number(row.totalRuns || 0),
+      totalWickets: Number(row.totalWickets || 0),
+      ones: Number(row.ones || 0),
+      twos: Number(row.twos || 0),
+      threes: Number(row.threes || 0),
+      fours: Number(row.fours || 0),
+      sixes: Number(row.sixes || 0),
+      totalWins: Number(row.totalWins || 0),
+      manOfMatchCount: Number(row.manOfMatchCount || 0),
+    };
+
+    res.json(stats);
+  } catch (err) {
+    console.error("Player stats error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get all player stats
 app.get("/api/players/stats/all", async (req, res) => {
   try {
@@ -530,6 +262,26 @@ app.get("/api/matches/:id/stats", async (req, res) => {
   }
 });
 
+app.delete("/api/players/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Attempt to delete the record
+    const [result] = await pool.query("DELETE FROM players WHERE id = ?", [id]);
+
+    // Check if any rows were affected by the query
+    if (result.affectedRows === 0) {
+      // If no rows were affected, the ID was not found
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    // If a row was affected, the deletion was successful
+    res.json({ message: "Player deleted successfully" });
+  } catch (err) {
+    // Handle any unexpected errors
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Delete match
 app.delete("/api/matches/:id", async (req, res) => {
   const { id } = req.params;
@@ -557,7 +309,7 @@ app.post("/api/matches", async (req, res) => {
       winner,
       manOfMatch,
       matchDate,
-      isCompleted, // Include isCompleted here
+      isCompleted,
     } = req.body;
 
     const matchId = uuidv4();
@@ -569,7 +321,6 @@ app.post("/api/matches", async (req, res) => {
 
     await connection.beginTransaction();
 
-    // Updated INSERT query to include is_completed
     await connection.query(
       `
       INSERT INTO matches (
@@ -592,7 +343,7 @@ app.post("/api/matches", async (req, res) => {
         winner,
         manOfMatch,
         matchDate,
-        isCompleted, // Add isCompleted here
+        isCompleted,
       ]
     );
 
