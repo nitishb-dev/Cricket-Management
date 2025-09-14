@@ -6,7 +6,7 @@ This web application was built using a prompt-engineering-first approach:
 
 - 💡 Idea + Prompts refined using **ChatGPT**
 - 🔧 Initial code generation through **bolt.new**
-- 🧠 Final development and completion using **Cursor AI** (AI code editor)
+- 🧠 Final development and refinement using **Cursor AI, Google Gemini, ChatGPT**
 
 The project combines human creativity with AI-augmented development. All logic, decisions, and final code were reviewed and customized as needed.
 
@@ -142,19 +142,17 @@ npm start                # Start production server
 
 - `GET /api/players` - Get all players
 - `POST /api/players` - Add new player
-- `GET /api/players/:id/stats` - Get player statistics
-- `GET /api/players/stats/all` - Get all player statistics
-
+- `GET /api/players/:id` - Updates an Existing player's name
+- `DELETE /api/players/:id` - Deletes a player by their ID
+- `GET /api/players/stats/:id` - Retrieves career statistics for a single player by their ID.
+- `GET /api/players/stats/all` -  Retrieves career statistics for all players
+  
 ### Matches
 
 - `GET /api/matches` - Get all matches
 - `GET /api/matches/:id` - Get match by ID
 - `POST /api/matches` - Save new match
 - `GET /api/matches/:id/stats` - Get match player stats
-
-### Health Check
-
-- `GET /api/health` - Server health check
 
 ## 🗄️ Database Schema
 
@@ -233,13 +231,6 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 - Change the PORT in `backend/.env` if 5000 is busy
 - Change the frontend port in `frontend/vite.config.ts` if 5173 is busy
 
-### PowerShell Issues
-
-If you encounter PowerShell execution policy issues:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
 
 ## 🎉 Features Implemented
 
@@ -253,7 +244,3 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - ✅ Player statistics tracking
 - ✅ Rematch functionality
 - ✅ Responsive mobile-first design
-
-## 📝 License
-
-This project is licensed under the ISC License.
