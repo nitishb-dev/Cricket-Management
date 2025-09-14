@@ -70,6 +70,7 @@ npm run install:all
 ### 2. Database Setup
 
 1. Create a MySQL database:
+
 ```sql
 CREATE DATABASE cricket_management;
 ```
@@ -81,11 +82,13 @@ CREATE DATABASE cricket_management;
 The setup script creates these environment files automatically:
 
 **Frontend (frontend/.env):**
+
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
 **Backend (backend/.env):**
+
 ```env
 PORT=5000
 DB_HOST=localhost
@@ -109,6 +112,7 @@ Open your browser and navigate to `http://localhost:5173`
 ## 📋 Available Commands
 
 ### Root Level Commands
+
 ```bash
 npm run dev              # Start both frontend and backend
 npm run dev:frontend     # Start frontend only
@@ -118,6 +122,7 @@ npm run build            # Build frontend for production
 ```
 
 ### Frontend Commands (from frontend/ directory)
+
 ```bash
 npm run dev              # Start development server
 npm run build            # Build for production
@@ -125,6 +130,7 @@ npm run preview          # Preview production build
 ```
 
 ### Backend Commands (from backend/ directory)
+
 ```bash
 npm run dev              # Start development server
 npm start                # Start production server
@@ -133,32 +139,39 @@ npm start                # Start production server
 ## 🔧 API Endpoints
 
 ### Players
+
 - `GET /api/players` - Get all players
 - `POST /api/players` - Add new player
 - `GET /api/players/:id/stats` - Get player statistics
 - `GET /api/players/stats/all` - Get all player statistics
 
 ### Matches
+
 - `GET /api/matches` - Get all matches
 - `GET /api/matches/:id` - Get match by ID
 - `POST /api/matches` - Save new match
 - `GET /api/matches/:id/stats` - Get match player stats
 
 ### Health Check
+
 - `GET /api/health` - Server health check
 
 ## 🗄️ Database Schema
 
-### Players Table
+The database schema is automatically created and maintained by the backend server on startup. The following SQL statements represent the current structure of the tables.
+
+### `players`
+
 ```sql
 CREATE TABLE IF NOT EXISTS players (
-  id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  id VARCHAR(36) PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ### Matches Table
+
 ```sql
 CREATE TABLE IF NOT EXISTS matches (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -179,6 +192,7 @@ CREATE TABLE IF NOT EXISTS matches (
 ```
 
 ### Match Player Stats Table
+
 ```sql
 CREATE TABLE IF NOT EXISTS match_player_stats (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -209,16 +223,20 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 ## 🔧 Troubleshooting
 
 ### Database Connection Issues
+
 - Make sure MySQL is running
 - Check your database credentials in `backend/.env`
 - Verify the database `cricket_management` exists
 
 ### Port Already in Use
+
 - Change the PORT in `backend/.env` if 5000 is busy
 - Change the frontend port in `frontend/vite.config.ts` if 5173 is busy
 
 ### PowerShell Issues
+
 If you encounter PowerShell execution policy issues:
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
@@ -238,4 +256,4 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ## 📝 License
 
-This project is licensed under the ISC License. 
+This project is licensed under the ISC License.
