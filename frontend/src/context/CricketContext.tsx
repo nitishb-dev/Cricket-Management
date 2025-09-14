@@ -62,15 +62,19 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     setLoading(true)
     setError(null)
     try {
-      const playersResponse = await fetch(`${API_BASE_URL}/players`)
-      if (!playersResponse.ok) throw new Error('Failed to fetch players')
-      const playersData: Player[] = await playersResponse.json()
-      setPlayers(playersData)
+      const [playersResponse, matchesResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/players`),
+        fetch(`${API_BASE_URL}/matches`)
+      ]);
 
-      const matchesResponse = await fetch(`${API_BASE_URL}/matches`)
-      if (!matchesResponse.ok) throw new Error('Failed to fetch matches')
-      const matchesData: Match[] = await matchesResponse.json()
-      setMatches(matchesData)
+      if (!playersResponse.ok) throw new Error('Failed to fetch players');
+      if (!matchesResponse.ok) throw new Error('Failed to fetch matches');
+
+      const playersData: Player[] = await playersResponse.json();
+      const matchesData: Match[] = await matchesResponse.json();
+
+      setPlayers(playersData);
+      setMatches(matchesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -100,19 +104,41 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   }
 
   const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
+    // Find the player's old name from the current state before sending the update.
+    // This is crucial for finding and replacing the name in the matches list.
+    const oldPlayer = players.find(p => p.id === id)
+
     try {
       const response = await fetch(`${API_BASE_URL}/players/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       })
+
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to update player')
       }
-      const data: Player = await response.json()
-      await refreshData()
-      return data
+
+      const updatedPlayer: Player = await response.json()
+
+      // 1. Update the players list with the new player data.
+      setPlayers(prevPlayers =>
+        prevPlayers.map(p => (p.id === id ? updatedPlayer : p))
+      )
+
+      // 2. If the old player was found, iterate through the matches and patch the man_of_match field.
+      if (oldPlayer) {
+        setMatches(prevMatches =>
+          prevMatches.map(m => {
+            return m.man_of_match === oldPlayer.name
+              ? { ...m, man_of_match: updatedPlayer.name }
+              : m
+          })
+        )
+      }
+
+      return updatedPlayer
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update player')
       return null

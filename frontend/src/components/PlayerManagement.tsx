@@ -1,6 +1,6 @@
 // import React, { useState } from 'react'
 // import { User, Plus, Search, AlertCircle } from 'lucide-react'
-// import { useCricket } from '../context/CricketContext'
+// import { useCricket } from '../context/CricketContext' // ✅ also bring deletePlayer from context
 // import { Player } from '../types/cricket'
 
 // interface PlayerManagementProps {
@@ -19,8 +19,8 @@
 //   maxSelections,
 //   title = "Player Management",
 //   disabledPlayers = []
-// }) => {
-//   const { players, addPlayer, loading } = useCricket()
+// }) => { // ✅ also bring deletePlayer from context
+//   const { players, addPlayer, deletePlayer, loading } = useCricket()
 //   const [newPlayerName, setNewPlayerName] = useState('')
 //   const [searchTerm, setSearchTerm] = useState('')
 //   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
@@ -165,10 +165,23 @@
 //                 }}
 //               >
 //                 <span className="font-medium text-sm sm:text-base">{player.name}</span>
-//                 <div className="flex items-center gap-2">
+
+//                 <div className="flex items-center gap-3">
 //                   {selected && (
 //                     <span className="text-green-600 font-medium text-xs sm:text-sm">Selected</span>
 //                   )}
+//                   <button
+//                     type="button"
+//                     onClick={(e) => {
+//                       e.stopPropagation() // prevent triggering select/deselect
+//                       if (window.confirm(`Delete ${player.name}?`)) {
+//                         deletePlayer(player.id) // ✅ now valid
+//                       }
+//                     }}
+//                     className="text-red-500 hover:text-red-700 transition"
+//                   >
+//                     <Trash2 size={16} />
+//                   </button>
 //                   <div
 //                     className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 
 //                       ${selected ? 'bg-green-500 border-green-500' : 'border-gray-300'}
@@ -185,7 +198,7 @@
 // }
 
 import React, { useState } from 'react'
-import { User, Plus, Search, AlertCircle, Trash2 } from 'lucide-react'
+import { User, Plus, Search, AlertCircle, Trash2, Edit } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { Player } from '../types/cricket'
 
@@ -207,12 +220,13 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   disabledPlayers = []
 }) => {
   // ✅ also bring deletePlayer from context
-  const { players, addPlayer, deletePlayer, loading } = useCricket()
+  const { players, addPlayer, deletePlayer, updatePlayer, loading } = useCricket()
 
   const [newPlayerName, setNewPlayerName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,6 +251,20 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
     setIsAddingPlayer(false)
   }
 
+  const handleUpdatePlayer = async (id: string, name: string) => {
+    const trimmedName = name.trim()
+    if (!trimmedName) return
+
+    const exists = players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase() && p.id !== id)
+    if (exists) {
+      alert('Another player with this name already exists.')
+      return
+    }
+
+    await updatePlayer(id, trimmedName)
+    setEditingPlayer(null)
+  }
+
   const filteredPlayers = players.filter(player =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -250,9 +278,9 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   const canSelectMore = !maxSelections || selectedPlayers.length < maxSelections
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 lg:p-8 w-full max-w-4xl mx-auto">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 w-full max-w-4xl mx-auto">
       {/* Title */}
-      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
         <User className="text-green-600 w-5 h-5 sm:w-6 sm:h-6" />
         {title}
       </h2>
@@ -269,13 +297,13 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
             }}
             placeholder="Enter player name"
             className="w-full sm:flex-1 px-4 py-2 border border-gray-300 rounded-lg 
-                       focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
+                       focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base"
           />
           <button
             type="submit"
             disabled={!newPlayerName.trim() || isAddingPlayer}
             className="w-full sm:w-auto px-4 sm:px-6 py-2 
-                       bg-green-600 text-white rounded-lg hover:bg-green-700 
+                       bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 
                        disabled:opacity-50 disabled:cursor-not-allowed 
                        flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
           >
@@ -301,7 +329,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search players..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
-                       focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
+                       focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base"
           />
         </div>
       </div>
@@ -309,14 +337,14 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
       {/* Selection Info */}
       {maxSelections && (
         <div className="mb-4 text-sm sm:text-base text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-          <span>Selected: {selectedPlayers.length}/{maxSelections} players</span>
-          <span className="text-gray-500">Total Available Players: {players.length}</span>
+          <span>Selected: <strong>{selectedPlayers.length} / {maxSelections}</strong> players</span>
+          <span className="text-gray-500">Total Players: {players.length}</span>
         </div>
       )}
 
       {/* Player Count Summary */}
       <div className="mb-4 text-sm sm:text-base text-gray-600 text-center">
-        Showing {filteredPlayers.length} of {players.length} total players
+        Showing <strong>{filteredPlayers.length}</strong> of <strong>{players.length}</strong> total players
         {selectedPlayers.length > 0 && <> — {selectedPlayers.length} selected</>}
       </div>
 
@@ -337,12 +365,12 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
               <div
                 key={player.id}
                 className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 transition-all 
-                  ${selected
-                    ? 'border-green-500 bg-green-50 cursor-pointer'
+                  ${selected // Player is selected
+                    ? 'border-emerald-500 bg-emerald-50 cursor-pointer'
                     : disabled
-                    ? 'border-gray-200 bg-gray-100 text-gray-400 line-through cursor-not-allowed'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
-                }`}
+                    ? 'border-slate-200 bg-slate-100 text-slate-400 line-through cursor-not-allowed'
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer'
+                  }`}
                 onClick={() => {
                   if (disabled) return
                   if (selected && onPlayerDeselect) {
@@ -352,30 +380,56 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                   }
                 }}
               >
-                <span className="font-medium text-sm sm:text-base">{player.name}</span>
-
-                <div className="flex items-center gap-3">
-                  {selected && (
-                    <span className="text-green-600 font-medium text-xs sm:text-sm">Selected</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation() // prevent triggering select/deselect
-                      if (window.confirm(`Delete ${player.name}?`)) {
-                        deletePlayer(player.id) // ✅ now valid
-                      }
+                {editingPlayer?.id === player.id ? (
+                  <input
+                    type="text"
+                    defaultValue={player.name}
+                    autoFocus
+                    onBlur={(e) => handleUpdatePlayer(player.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleUpdatePlayer(player.id, e.currentTarget.value)
+                      if (e.key === 'Escape') setEditingPlayer(null)
                     }}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <div
-                    className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 
-                      ${selected ? 'bg-green-500 border-green-500' : 'border-gray-300'}
-                    `}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full bg-white px-2 py-1 border border-emerald-500 rounded-md"
                   />
-                </div>
+                ) : (
+                  <span className="font-medium text-sm sm:text-base">{player.name}</span>
+                )}
+
+                {!onPlayerSelect && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingPlayer(player)
+                      }}
+                      className="text-slate-500 hover:text-emerald-700 transition"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation() // prevent triggering select/deselect
+                        if (window.confirm(`Are you sure you want to delete ${player.name}? This action cannot be undone.`)) {
+                          deletePlayer(player.id) // ✅ now valid
+                        }
+                      }}
+                      className="text-slate-500 hover:text-red-700 transition"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+
+                {onPlayerSelect && (
+                  <div className="flex items-center gap-3">
+                    {selected && <span className="text-emerald-600 font-medium text-xs sm:text-sm">Selected</span>}
+                    <div className={`w-4 h-4 rounded-full border-2 ${selected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`} />
+                  </div>
+                )}
               </div>
             )
           })
