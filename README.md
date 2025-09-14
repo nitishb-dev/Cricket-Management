@@ -135,17 +135,17 @@ npm start                # Start production server
 ### Players
 - `GET /api/players` - Get all players
 - `POST /api/players` - Add new player
-- `GET /api/players/:id/stats` - Get player statistics
-- `GET /api/players/stats/all` - Get all player statistics
-
+- `GET /api/players/:id` - Updates an Existing player's name
+- `DELETE /api/players/:id` - Deletes a player by their ID
+- `GET /api/players/stats/:id` - Retrieves career statistics for a single player by their ID.
+- `GET /api/players/stats/all` -  Retrieves career statistics for all players
+  
 ### Matches
 - `GET /api/matches` - Get all matches
 - `GET /api/matches/:id` - Get match by ID
 - `POST /api/matches` - Save new match
 - `GET /api/matches/:id/stats` - Get match player stats
 
-### Health Check
-- `GET /api/health` - Server health check
 
 ## 🗄️ Database Schema
 
