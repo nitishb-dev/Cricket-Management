@@ -158,14 +158,35 @@ router.post("/", async (req, res, next) => {
 // Delete match
 router.delete("/:id", async (req, res, next) => {
   const { id } = req.params;
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query("DELETE FROM matches WHERE id = ?", [id]);
-    if (result.affectedRows === 0) {
+    await connection.beginTransaction();
+
+    // Check if the match exists to ensure we can return a proper 404.
+    const [[match]] = await connection.query(
+      "SELECT id FROM matches WHERE id = ?",
+      [id]
+    );
+
+    if (!match) {
       return res.status(404).json({ error: "Match not found" });
     }
+
+    // Explicitly delete associated player stats first to be robust.
+    // This handles cases where ON DELETE CASCADE might not be active on the DB.
+    await connection.query(
+      "DELETE FROM match_player_stats WHERE match_id = ?",
+      [id]
+    );
+    await connection.query("DELETE FROM matches WHERE id = ?", [id]);
+
+    await connection.commit();
     res.status(200).json({ message: "Match deleted successfully" });
   } catch (err) {
+    await connection.rollback();
     next(err);
+  } finally {
+    connection.release();
   }
 });
 
