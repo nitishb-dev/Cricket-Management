@@ -43,28 +43,59 @@ router.post("/", async (req, res, next) => {
 // Update player
 router.put("/:id", async (req, res, next) => {
   const { id } = req.params;
-  const { name } = req.body;
-  if (!name) {
+  const { name: newName } = req.body;
+  if (!newName) {
     return res.status(400).json({ error: "Player name required" });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const [result] = await pool.query(
-      "UPDATE players SET name = ? WHERE id = ?",
-      [name, id]
+    await connection.beginTransaction();
+
+    // First, get the current name of the player to check for existence and for updating matches
+    const [[player]] = await connection.query(
+      "SELECT name FROM players WHERE id = ?",
+      [id]
     );
-    if (result.affectedRows === 0) {
+
+    if (!player) {
+      await connection.rollback(); // No need to rollback if nothing happened, but good practice
       return res.status(404).json({ error: "Player not found" });
     }
-    const [[player]] = await pool.query("SELECT * FROM players WHERE id = ?", [
+    const oldName = player.name;
+
+    // Update the player's name in the 'players' table
+    await connection.query("UPDATE players SET name = ? WHERE id = ?", [
+      newName,
       id,
     ]);
-    res.json(player);
+
+    // If the name has changed, update all occurrences in the 'matches' table
+    if (oldName !== newName) {
+      await connection.query(
+        "UPDATE matches SET man_of_match = ? WHERE man_of_match = ?",
+        [newName, oldName]
+      );
+    }
+
+    await connection.commit();
+
+    // Fetch the fully updated player object to send back
+    const [[updatedPlayer]] = await connection.query(
+      "SELECT * FROM players WHERE id = ?",
+      [id]
+    );
+    res.json(updatedPlayer);
   } catch (err) {
+    await connection.rollback();
     if (err.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ error: "Player name already exists" });
+      return res
+        .status(409)
+        .json({ error: "A player with this name already exists" });
     }
     next(err);
+  } finally {
+    connection.release();
   }
 });
 
