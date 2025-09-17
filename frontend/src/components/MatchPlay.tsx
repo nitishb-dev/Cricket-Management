@@ -64,6 +64,14 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
   const currentStats = currentInning === 1 ? inning1Stats : inning2Stats
   const setCurrentStats = currentInning === 1 ? setInning1Stats : setInning2Stats
 
+  const firstInningBattingTeam =
+    (matchData.tossWinner === matchData.teamA.name &&
+      matchData.tossDecision === "bat") ||
+    (matchData.tossWinner === matchData.teamB.name &&
+      matchData.tossDecision === "bowl")
+      ? matchData.teamA
+      : matchData.teamB
+
   // Ensure selected players are valid
   useEffect(() => {
     // If selected batsman is not in the current players list, deselect them
@@ -255,7 +263,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
   const checkInningComplete = (stats: InningStats) => {
     const currentBattingTeamPlayersCount = currentBattingTeam.players.length;
 
-    const isAllOut = stats.wickets >= currentBattingTeamPlayersCount;
+    const isAllOut = stats.wickets >= currentBattingTeamPlayersCount - 1;
     const isOversComplete = stats.overs >= matchData.overs;
     const isTargetChased = currentInning === 2 && stats.runs > (inning1Stats?.runs || 0);
 
@@ -417,7 +425,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-gray-800">
                   {currentStats.runs}/{currentStats.wickets}
-                  {getAvailableBatsmen().length === 0 && (
+                  {currentStats.wickets >= currentBattingTeam.players.length - 1 && (
                     <span className="ml-2 text-red-600 text-lg font-semibold">ALL OUT</span>
                   )}
                 </span>
@@ -449,7 +457,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
                 <div className="text-lg text-gray-600">
                   ({inning1Stats.overs}.{inning1Stats.ballsThisOver} overs)
                 </div>
-                {inning1Stats.wickets >= matchData.teamA.players.length - 1 && (
+                {inning1Stats.wickets >= firstInningBattingTeam.players.length - 1 && (
                   <div className="text-sm text-red-600 font-semibold">
                     ALL OUT
                   </div>
