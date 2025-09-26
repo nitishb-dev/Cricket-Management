@@ -44,22 +44,17 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
   const handleRematch = async (match: Match) => {
     const stats = await getMatchPlayerStats(match.id)
 
-    // ✅ Build team players properly as TeamPlayer[]
-    const teamAPlayers: TeamPlayer[] = stats
-      .filter(stat => stat.team === match.team_a_name)
-      .map(stat => {
-        const player = players.find(p => p.id === stat.player_id)
-        return player ? { player, runs: 0, wickets: 0 } : null
-      })
-      .filter((p): p is TeamPlayer => p !== null)
+    const playerMap = new Map(players.map(p => [p.id, p]));
+    const teamAPlayers: TeamPlayer[] = [];
+    const teamBPlayers: TeamPlayer[] = [];
 
-    const teamBPlayers: TeamPlayer[] = stats
-      .filter(stat => stat.team === match.team_b_name)
-      .map(stat => {
-        const player = players.find(p => p.id === stat.player_id)
-        return player ? { player, runs: 0, wickets: 0 } : null
-      })
-      .filter((p): p is TeamPlayer => p !== null)
+    stats.forEach(stat => {
+      const player = playerMap.get(stat.player_id);
+      if (!player) return;
+      const teamPlayer: TeamPlayer = { player, runs: 0, wickets: 0 };
+      if (stat.team === match.team_a_name) teamAPlayers.push(teamPlayer);
+      else if (stat.team === match.team_b_name) teamBPlayers.push(teamPlayer);
+    });
 
     if (teamAPlayers.length > 0 && teamBPlayers.length > 0) {
       const tossWinner = window.prompt('Who won the toss? (Enter team name exactly)', match.team_a_name)

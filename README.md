@@ -1,6 +1,6 @@
 # 🏏 Cricket Management Application
 
-A full-stack dynamic Cricket Web Application that manages cricket matches, dynamic teams, player statistics, and match history. Built with React, Node.js, Express, and MySQL.
+A full-stack dynamic Cricket Web Application that manages cricket matches, dynamic teams, player statistics, and match history. Built with React, Node.js, Express, and Supabase.
 
 This web application was built using a prompt-engineering-first approach:
 
@@ -24,8 +24,8 @@ The project combines human creativity with AI-augmented development. All logic, 
 
 - **Frontend**: React + TypeScript + Tailwind CSS
 - **Backend**: Node.js + Express
-- **Database**: MySQL
-- **State Management**: React Context API
+- **Database**: Supabase (PostgreSQL)
+- **State Management**: React Context API (Frontend)
 - **Date Utility**: Day.js
 - **Build Tool**: Vite
 
@@ -57,7 +57,7 @@ CricketManagementApp/
 ### Prerequisites
 
 - Node.js (v16 or higher)
-- MySQL (v8.0 or higher)
+- A Supabase account
 - npm or yarn
 
 ### 1. Install Dependencies
@@ -145,8 +145,8 @@ npm start                # Start production server
 - `GET /api/players/:id` - Updates an Existing player's name
 - `DELETE /api/players/:id` - Deletes a player by their ID
 - `GET /api/players/stats/:id` - Retrieves career statistics for a single player by their ID.
-- `GET /api/players/stats/all` -  Retrieves career statistics for all players
-  
+- `GET /api/players/stats/all` - Retrieves career statistics for all players
+
 ### Matches
 
 - `GET /api/matches` - Get all matches
@@ -230,7 +230,6 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 
 - Change the PORT in `backend/.env` if 5000 is busy
 - Change the frontend port in `frontend/vite.config.ts` if 5173 is busy
-
 
 ## 🎉 Features Implemented
 

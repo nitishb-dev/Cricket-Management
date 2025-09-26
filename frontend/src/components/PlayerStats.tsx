@@ -18,7 +18,7 @@ export const PlayerStats: React.FC = () => {
 
   useEffect(() => {
     loadStats()
-  }, [])
+  }, [getAllPlayerStats])
 
   const loadStats = async () => {
     setLoadingStats(true)

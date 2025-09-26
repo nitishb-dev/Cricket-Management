@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { initDatabase } from "./db.js";
 import playerRoutes from "./routes/players.js";
 import matchRoutes from "./routes/matches.js";
 
@@ -41,7 +40,6 @@ app.use((err, req, res, next) => {
 // --- Server Startup ---
 const startServer = async () => {
   try {
-    await initDatabase();
     app.listen(PORT, () => {
       console.log(`🚀 Server running at http://localhost:${PORT}`);
     });

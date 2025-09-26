@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Trophy, Users, History, Calendar, Play } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
-import { PlayerStats } from '../types/cricket'
 import dayjs from 'dayjs'
 
 type ActiveView = 'dashboard' | 'players' | 'newMatch' | 'playMatch' | 'history' | 'stats'
@@ -13,7 +12,6 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { players, matches, loading } = useCricket()
   const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3))
-  const [topPlayers, setTopPlayers] = useState<PlayerStats[]>([])
 
   useEffect(() => {
     setRecentMatches(matches.slice(0, 3))
