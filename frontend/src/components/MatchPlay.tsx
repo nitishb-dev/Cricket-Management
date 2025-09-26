@@ -1,3 +1,5 @@
+// src/components/MatchPlay.tsx
+
 import React, { useState, useEffect } from 'react'
 import { Trophy, Target, Clock, Save, AlertCircle } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
@@ -164,22 +166,9 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     if (selectedBatsman) {
       newMatchData[battingTeamKey] = {
         ...newMatchData[battingTeamKey],
-        players: newMatchData[battingTeamKey].players.map(p => {
-          if (p.player.id !== selectedBatsman.player.id) return p;
-
-          const newP = { ...p, runs: p.runs + ballEvent.runs };
-          // Update detailed scores
-          if (!ballEvent.isExtra) {
-            switch (ballEvent.runs) {
-              case 1: newP.ones = (newP.ones || 0) + 1; break;
-              case 2: newP.twos = (newP.twos || 0) + 1; break;
-              case 3: newP.threes = (newP.threes || 0) + 1; break;
-              case 4: newP.fours = (newP.fours || 0) + 1; break;
-              case 6: newP.sixes = (newP.sixes || 0) + 1; break;
-            }
-          }
-          return newP;
-        })
+        players: newMatchData[battingTeamKey].players.map(p =>
+          p.player.id === selectedBatsman.player.id ? { ...p, runs: p.runs + ballEvent.runs } : p
+        )
       };
     }
 

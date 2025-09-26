@@ -1,16 +1,18 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { pool } from "../db.js";
+import { supabase } from "../db.js";
 
 const router = Router();
 
 // Get all matches
 router.get("/", async (req, res, next) => {
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM matches ORDER BY created_at DESC"
-    );
-    res.json(rows);
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -20,10 +22,12 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   const { id } = req.params;
   try {
-    const [[match]] = await pool.query("SELECT * FROM matches WHERE id = ?", [
-      id,
-    ]);
-    if (!match) {
+    const { data: match, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error && error.code === "PGRST116") {
       return res.status(404).json({ error: "Match not found" });
     }
     res.json(match);
@@ -36,23 +40,22 @@ router.get("/:id", async (req, res, next) => {
 router.get("/:id/stats", async (req, res, next) => {
   const { id } = req.params;
   try {
-    const [[match]] = await pool.query("SELECT id FROM matches WHERE id = ?", [
-      id,
-    ]);
-    if (!match) {
+    const { data: match, error: matchError } = await supabase
+      .from("matches")
+      .select("id")
+      .eq("id", id)
+      .single();
+
+    if (matchError || !match) {
       return res.status(404).json({ error: "Match not found" });
     }
 
-    const [rows] = await pool.query(
-      `
-      SELECT mps.*, p.name AS player_name
-      FROM match_player_stats mps
-      JOIN players p ON mps.player_id = p.id
-      WHERE mps.match_id = ?
-    `,
-      [id]
-    );
-    res.json(rows);
+    const { data, error } = await supabase
+      .from("match_player_stats")
+      .select("*, players(name)")
+      .eq("match_id", id);
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -60,7 +63,6 @@ router.get("/:id/stats", async (req, res, next) => {
 
 // Save a match
 router.post("/", async (req, res, next) => {
-  const connection = await pool.getConnection();
   try {
     const {
       teamA,
@@ -91,102 +93,90 @@ router.post("/", async (req, res, next) => {
       0
     );
 
-    await connection.beginTransaction();
+    const { error: matchError } = await supabase.from("matches").insert({
+      id: matchId,
+      team_a_name: teamA.name,
+      team_b_name: teamB.name,
+      overs,
+      toss_winner: tossWinner,
+      toss_decision: tossDecision,
+      team_a_score: teamAScore,
+      team_a_wickets: teamAWickets,
+      team_b_score: teamBScore,
+      team_b_wickets: teamBWickets,
+      winner,
+      man_of_match: manOfMatch,
+      match_date: matchDate,
+      is_completed: isCompleted,
+    });
 
-    await connection.query(
-      `
-      INSERT INTO matches (
-        id, team_a_name, team_b_name, overs, toss_winner, toss_decision,
-        team_a_score, team_a_wickets, team_b_score, team_b_wickets,
-        winner, man_of_match, match_date, is_completed
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-      [
-        matchId,
-        teamA.name,
-        teamB.name,
-        overs,
-        tossWinner,
-        tossDecision,
-        teamAScore,
-        teamAWickets,
-        teamBScore,
-        teamBWickets,
-        winner,
-        manOfMatch,
-        matchDate,
-        isCompleted,
-      ]
-    );
+    if (matchError) throw matchError;
 
-    const playerStatPromises = [...teamA.players, ...teamB.players].map((p) => {
+    const playerStats = [...teamA.players, ...teamB.players].map((p) => {
       const teamName = teamA.players.some((ap) => ap.player.id === p.player.id)
         ? teamA.name
         : teamB.name;
-      return connection.query(
-        `INSERT INTO match_player_stats 
-          (id, match_id, player_id, team, runs, wickets, ones, twos, threes, fours, sixes) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          uuidv4(),
-          matchId,
-          p.player.id,
-          teamName,
-          p.runs || 0,
-          p.wickets || 0,
-          p.ones || 0,
-          p.twos || 0,
-          p.threes || 0,
-          p.fours || 0,
-          p.sixes || 0,
-        ]
-      );
+      return {
+        id: uuidv4(),
+        match_id: matchId,
+        player_id: p.player.id,
+        team: teamName,
+        runs: p.runs || 0,
+        wickets: p.wickets || 0,
+        ones: p.ones || 0,
+        twos: p.twos || 0,
+        threes: p.threes || 0,
+        fours: p.fours || 0,
+        sixes: p.sixes || 0,
+      };
     });
 
-    await Promise.all(playerStatPromises);
+    const { error: statsError } = await supabase
+      .from("match_player_stats")
+      .insert(playerStats);
 
-    await connection.commit();
+    if (statsError) throw statsError;
+
     res.status(201).json({ id: matchId });
   } catch (err) {
-    await connection.rollback();
     next(err);
-  } finally {
-    connection.release();
   }
 });
 
 // Delete match
 router.delete("/:id", async (req, res, next) => {
   const { id } = req.params;
-  const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
+    // Check if the match exists
+    const { data: match, error: findError } = await supabase
+      .from("matches")
+      .select("id")
+      .eq("id", id)
+      .single();
 
-    // Check if the match exists to ensure we can return a proper 404.
-    const [[match]] = await connection.query(
-      "SELECT id FROM matches WHERE id = ?",
-      [id]
-    );
-
-    if (!match) {
+    if (findError || !match) {
       return res.status(404).json({ error: "Match not found" });
     }
 
     // Explicitly delete associated player stats first to be robust.
     // This handles cases where ON DELETE CASCADE might not be active on the DB.
-    await connection.query(
-      "DELETE FROM match_player_stats WHERE match_id = ?",
-      [id]
-    );
-    await connection.query("DELETE FROM matches WHERE id = ?", [id]);
+    const { error: statsError } = await supabase
+      .from("match_player_stats")
+      .delete()
+      .eq("match_id", id);
 
-    await connection.commit();
+    if (statsError) throw statsError;
+
+    const { error: matchError } = await supabase
+      .from("matches")
+      .delete()
+      .eq("id", id);
+
+    if (matchError) throw matchError;
+
     res.status(200).json({ message: "Match deleted successfully" });
   } catch (err) {
-    await connection.rollback();
     next(err);
-  } finally {
-    connection.release();
   }
 });
 
