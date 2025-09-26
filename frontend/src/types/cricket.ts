@@ -254,6 +254,11 @@ export interface TeamPlayer {
   player: Player
   runs: number
   wickets: number
+  ones: number
+  twos: number
+  threes: number
+  fours: number
+  sixes: number
 }
 
 export interface MatchTeam {

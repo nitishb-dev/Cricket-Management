@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Trophy, Users, History, Calendar, Play } from 'lucide-react'
+import { Trophy, Users, History, Calendar, Play, Target, TrendingUp } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import dayjs from 'dayjs'
 
@@ -10,11 +10,29 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { players, matches, loading } = useCricket()
+  const { players, matches, loading, getAllPlayerStats } = useCricket()
   const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3))
 
   useEffect(() => {
     setRecentMatches(matches.slice(0, 3))
+  }, [matches])
+
+  useEffect(() => {
+    const fetchTopPlayers = async () => {
+      const stats = await getAllPlayerStats()
+      if (stats && stats.length > 0) {
+        const scorer = [...stats].sort((a, b) => b.totalRuns - a.totalRuns)[0]
+        const wicketTaker = [...stats].sort((a, b) => b.totalWickets - a.totalWickets)[0]
+        setTopStats({
+          topScorer: scorer.totalRuns > 0 ? scorer : null,
+          topWicketTaker: wicketTaker.totalWickets > 0 ? wicketTaker : null
+        })
+      }
+    }
+
+    if (matches.length > 0) {
+      fetchTopPlayers()
+    }
   }, [matches])
 
   const stats = [
@@ -160,29 +178,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-md p-6 text-white">
-          <h3 className="text-xl font-bold mb-2">Manage Players</h3>
-          <p className="mb-4 opacity-90">Add new players and view their profiles</p>
-          <button
-            onClick={() => onNavigate('players')}
-            className="bg-white text-green-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-          >
-            Manage Players
-          </button>
-        </div>
-
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-md p-6 text-white">
-          <h3 className="text-xl font-bold mb-2">View Statistics</h3>
-          <p className="mb-4 opacity-90">Analyze player performance and trends</p>
-          <button
-            onClick={() => onNavigate('stats')}
-            className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-          >
-            View Stats
-          </button>
-        </div>
+      {/* Top Performers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        {topStats.topScorer ? (
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-lg p-6 text-white">
+            <h3 className="text-xl font-bold mb-2 flex items-center gap-2"><Target /> Top Run Scorer</h3>
+            <p className="text-2xl font-bold">{topStats.topScorer.player.name}</p>
+            <p className="text-lg opacity-90">{topStats.topScorer.totalRuns} Runs</p>
+          </div>
+        ) : (
+          <div className="bg-slate-100 rounded-2xl p-6 text-center text-slate-500 flex items-center justify-center">
+            <p>No run scorer data yet.</p>
+          </div>
+        )}
+        {topStats.topWicketTaker ? (
+          <div className="bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl shadow-lg p-6 text-white">
+            <h3 className="text-xl font-bold mb-2 flex items-center gap-2"><TrendingUp /> Top Wicket Taker</h3>
+            <p className="text-2xl font-bold">{topStats.topWicketTaker.player.name}</p>
+            <p className="text-lg opacity-90">{topStats.topWicketTaker.totalWickets} Wickets</p>
+          </div>
+        ) : (
+          <div className="bg-slate-100 rounded-2xl p-6 text-center text-slate-500 flex items-center justify-center">
+            <p>No wicket taker data yet.</p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -47,6 +47,11 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
           player,
           runs: 0,
           wickets: 0,
+          ones: 0,
+          twos: 0,
+          threes: 0,
+          fours: 0,
+          sixes: 0,
         })),
       },
       teamB: {
@@ -55,6 +60,11 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
           player,
           runs: 0,
           wickets: 0,
+          ones: 0,
+          twos: 0,
+          threes: 0,
+          fours: 0,
+          sixes: 0,
         })),
       },
       overs,
@@ -70,9 +80,9 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
     switch (step) {
       case "config":
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-3">
-              <Settings className="text-green-600" size={24} />
+              <Settings className="text-emerald-600" size={24} />
               <h2 className="text-2xl font-bold text-gray-800">
                 Match Configuration
               </h2>
@@ -87,7 +97,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                 value={overs}
                 onChange={(e) => setOvers(Number(e.target.value))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                           focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 {[5, 10, 15, 20, 30, 50].map((val) => (
                   <option key={val} value={val}>
@@ -109,7 +119,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   value={teamAName}
                   onChange={(e) => setTeamAName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                             focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                             focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Enter team name"
                 />
               </div>
@@ -122,7 +132,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   value={teamBName}
                   onChange={(e) => setTeamBName(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                             focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                             focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Enter team name"
                 />
               </div>
@@ -131,8 +141,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             <button
               onClick={() => setStep("teamA")}
               disabled={!teamAName.trim() || !teamBName.trim()}
-              className="w-full px-6 py-3 bg-green-600 text-white rounded-lg 
-                         hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed 
+              className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg 
+                         hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
                          transition-colors font-medium"
             >
               Next: Select {teamAName} Players
@@ -149,7 +159,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
         const onNext = () => setStep(step === "teamA" ? "teamB" : "toss")
 
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={onBack}
@@ -184,8 +194,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
               <button
                 onClick={onNext}
                 disabled={selectedPlayers.length === 0}
-                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg 
-                           hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed 
+                className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg 
+                           hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
                            transition-colors font-medium"
               >
                 {step === "teamA"
@@ -199,7 +209,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
 
       case "toss":
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setStep("teamB")}
@@ -222,8 +232,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                     onClick={() => setTossWinner(team)}
                     className={`p-3 rounded-lg border-2 transition-all ${
                       tossWinner === team
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-300 hover:border-gray-400"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold"
+                        : "border-slate-300 hover:border-slate-400"
                     }`}
                   >
                     {team}
@@ -244,8 +254,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                     onClick={() => setTossDecision(choice as "bat" | "bowl")}
                     className={`p-3 rounded-lg border-2 transition-all ${
                       tossDecision === choice
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-300 hover:border-gray-400"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold"
+                          : "border-slate-300 hover:border-slate-400"
                     }`}
                   >
                     {choice === "bat" ? "Bat First" : "Bowl First"}
@@ -255,9 +265,9 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             </div>
 
             {/* Summary */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-800 mb-2">Match Summary</h3>
-              <div className="text-sm text-blue-700 space-y-1">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <h3 className="font-semibold text-slate-800 mb-2">Match Summary</h3>
+              <div className="text-sm text-slate-700 space-y-1">
                 <p>
                   <strong>Format:</strong> {overs} overs
                 </p>
@@ -277,8 +287,8 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             <button
               onClick={handleStartMatch}
               disabled={!tossWinner}
-              className="w-full px-6 py-3 bg-green-600 text-white text-lg rounded-lg 
-                         hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed 
+              className="w-full px-6 py-3 bg-emerald-600 text-white text-lg rounded-lg 
+                         hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
                          transition-colors font-semibold flex items-center justify-center gap-2"
             >
               <Play size={20} />
@@ -293,15 +303,15 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
             {rematchData ? "Rematch Setup" : "New Match Setup"}
           </h1>
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
           >
             Cancel
           </button>
