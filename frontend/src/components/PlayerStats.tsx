@@ -58,21 +58,31 @@ export const PlayerStats: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
-          <BarChart3 className="text-green-600" /> Player Statistics
-        </h1>
-        <button
-          onClick={loadStats}
-          className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          Refresh Stats
-        </button>
-      </div>
+    <div className="page-container">
+      <div className="content-container space-y-8">
+        {/* Header */}
+        <div className="card p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-primary rounded-2xl">
+                <BarChart3 className="text-white w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Player Statistics</h1>
+                <p className="text-gray-600">Comprehensive performance analytics</p>
+              </div>
+            </div>
+            <button
+              onClick={loadStats}
+              className="btn-primary"
+            >
+              Refresh Stats
+            </button>
+          </div>
+        </div>
 
       {playerStats.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
+        <div className="card p-8 sm:p-12 text-center">
           <BarChart3 size={48} className="mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-600 mb-2">No Statistics Available</h2>
           <p className="text-gray-500">Play some matches to generate player statistics</p>
@@ -81,30 +91,29 @@ export const PlayerStats: React.FC = () => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {([
-              { title: 'Top Run Scorer', key: 'totalRuns', data: topPerformers.runs, color: 'yellow', icon: Target },
-              { title: 'Top Wicket Taker', key: 'totalWickets', data: topPerformers.wickets, color: 'red', icon: TrendingUp },
-              { title: 'Most Matches', key: 'totalMatches', data: topPerformers.matches, color: 'green', icon: Trophy },
-              { title: 'Most MoM Awards', key: 'manOfMatchCount', data: topPerformers.mom, color: 'purple', icon: Award }
-            ] as const).map(({ title, key, data, color, icon: Icon }, idx) => {
-              const { from, to, text } = colorMap[color]
+              { title: 'Top Run Scorer', key: 'totalRuns', data: topPerformers.runs, gradient: 'bg-gradient-secondary', icon: Target },
+              { title: 'Top Wicket Taker', key: 'totalWickets', data: topPerformers.wickets, gradient: 'bg-gradient-primary', icon: TrendingUp },
+              { title: 'Most Matches', key: 'totalMatches', data: topPerformers.matches, gradient: 'bg-gradient-accent', icon: Trophy },
+              { title: 'Most MoM Awards', key: 'manOfMatchCount', data: topPerformers.mom, gradient: 'bg-gradient-to-r from-purple-500 to-purple-600', icon: Award }
+            ] as const).map(({ title, key, data, gradient, icon: Icon }, idx) => {
               const value = data[0]?.[key] ?? 0
               const names = data.map(p => p.player.name).join(', ')
               return (
-                <div key={idx} className={`bg-gradient-to-r ${from} ${to} rounded-xl shadow-md p-6 text-white`}>
+                <div key={idx} className={`${gradient} rounded-2xl shadow-lg p-6 text-white card-hover`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className={`${text} text-sm font-medium`}>{title}</p>
+                      <p className="text-white/80 text-sm font-medium">{title}</p>
                       <p className="text-2xl font-bold">{value}</p>
-                      <p className={`${text} text-sm`}>{names}</p>
+                      <p className="text-white/80 text-sm truncate">{names}</p>
                     </div>
-                    <Icon className={text} size={32} />
+                    <Icon className="text-white/80" size={32} />
                   </div>
                 </div>
               )
             })}
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+          <div className="card p-4 sm:p-6">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-gray-700 font-medium">Sort by:</span>
               {([
@@ -117,7 +126,11 @@ export const PlayerStats: React.FC = () => {
                 <button
                   key={option.key}
                   onClick={() => setSortBy(option.key)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${sortBy === option.key ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
+                    sortBy === option.key 
+                      ? 'bg-gradient-primary text-white shadow-lg' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  }`}
                 >
                   {option.label}
                 </button>
@@ -125,7 +138,7 @@ export const PlayerStats: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50">
@@ -174,6 +187,7 @@ export const PlayerStats: React.FC = () => {
           </div>
         </>
       )}
+      </div>
     </div>
   )
 }

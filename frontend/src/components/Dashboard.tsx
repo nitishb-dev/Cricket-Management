@@ -12,6 +12,13 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { players, matches, loading, getAllPlayerStats } = useCricket()
   const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3))
+  const [topStats, setTopStats] = useState<{
+    topScorer: any | null
+    topWicketTaker: any | null
+  }>({
+    topScorer: null,
+    topWicketTaker: null
+  })
 
   useEffect(() => {
     setRecentMatches(matches.slice(0, 3))
@@ -40,21 +47,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       title: 'Total Players',
       value: players.length,
       icon: Users,
-      color: 'bg-blue-500',
+      gradient: 'from-green-500 to-green-600',
       action: () => onNavigate('players')
     },
     {
       title: 'Matches Played',
       value: matches.length,
       icon: History,
-      color: 'bg-green-500',
+      gradient: 'from-orange-500 to-orange-600',
       action: () => onNavigate('history')
     },
     {
       title: 'Active Season',
       value: '2025',
       icon: Calendar,
-      color: 'bg-orange-500',
+      gradient: 'from-blue-500 to-blue-600',
       action: () => onNavigate('stats')
     }
   ]
@@ -71,137 +78,209 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-      {/* Welcome Section */}
-      <div className="text-center py-8">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-          Welcome to Cricket Manager
-        </h1>
-        <p className="text-xl text-gray-600 mb-8">
-          Track matches, manage players, and analyze cricket statistics
-        </p>
+    <div className="page-container">
+      <div className="content-container space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden bg-gradient-primary rounded-3xl shadow-2xl">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
 
-        <button
-          onClick={() => onNavigate('newMatch')}
-          className="inline-flex items-center gap-3 px-8 py-4 bg-green-600 text-white text-lg font-semibold rounded-xl hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-        >
-          <Play size={24} />
-          Start New Match
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <div
-              key={index}
-              onClick={stat.action}
-              className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 p-6 cursor-pointer transform hover:-translate-y-1"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-800 mt-1">{stat.value}</p>
-                </div>
-                <div className={`${stat.color} p-3 rounded-lg`}>
-                  <Icon className="text-white" size={24} />
-                </div>
+          <div className="relative px-8 py-12 text-center text-white">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/20 rounded-full blur-lg"></div>
+                <Trophy className="relative text-orange-300" size={64} />
               </div>
             </div>
-          )
-        })}
-      </div>
 
-      {/* Recent Matches */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Trophy className="text-orange-500" />
-            Recent Matches
-          </h2>
-          <button
-            onClick={() => onNavigate('history')}
-            className="text-green-600 font-medium hover:text-green-700 transition-colors"
-          >
-            View All
-          </button>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+              Welcome to Cricket Manager
+            </h1>
+            <p className="text-lg sm:text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+              Your ultimate cricket management platform. Track matches, analyze performance, and build winning teams.
+            </p>
+
+            <div className="flex justify-center">
+              <button
+                onClick={() => onNavigate('newMatch')}
+                className="btn-secondary group flex items-center gap-3"
+              >
+                <Play size={24} className="group-hover:rotate-12 transition-transform" />
+                Start New Match
+              </button>
+            </div>
+          </div>
         </div>
 
-        {recentMatches.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <History size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg mb-2">No matches played yet</p>
-            <p className="text-sm mb-4">Start your first match to see results here</p>
-            <button
-              onClick={() => onNavigate('newMatch')}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Create First Match
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recentMatches.map(match => (
-              <div
-                key={match.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-semibold text-gray-800">
-                      {match.team_a_name} vs {match.team_b_name}
-                    </span>
-                    <span className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
-                      {match.overs} overs
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {dayjs(match.match_date).format('MMM DD, YYYY')}
-                  </span>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">{match.team_a_name}:</span> {match.team_a_score}/{match.team_a_wickets} • 
-                    <span className="font-medium ml-2">{match.team_b_name}:</span> {match.team_b_score}/{match.team_b_wickets}
+            return (
+              <div
+                key={index}
+                onClick={stat.action}
+                className="stats-card group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-gray-600 text-sm font-medium mb-2">{stat.title}</p>
+                    <p className="text-3xl lg:text-4xl font-bold text-gray-800 mb-1">{stat.value}</p>
+                    <div className="w-12 h-1 bg-gradient-to-r from-green-400 to-orange-400 rounded-full"></div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-green-600">{match.winner} Won</div>
-                    <div className="text-sm text-gray-500">MoM: {match.man_of_match}</div>
+                  <div className={`bg-gradient-to-r ${stat.gradient} p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="text-white" size={28} />
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )
+          })}
+        </div>
 
-      {/* Top Performers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-        {topStats.topScorer ? (
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-lg p-6 text-white">
-            <h3 className="text-xl font-bold mb-2 flex items-center gap-2"><Target /> Top Run Scorer</h3>
-            <p className="text-2xl font-bold">{topStats.topScorer.player.name}</p>
-            <p className="text-lg opacity-90">{topStats.topScorer.totalRuns} Runs</p>
+        {/* Recent Matches */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl">
+                <Trophy className="text-white" size={24} />
+              </div>
+              Recent Matches
+            </h2>
+            <button
+              onClick={() => onNavigate('history')}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              View All
+              <History size={18} />
+            </button>
           </div>
-        ) : (
-          <div className="bg-slate-100 rounded-2xl p-6 text-center text-slate-500 flex items-center justify-center">
-            <p>No run scorer data yet.</p>
-          </div>
-        )}
-        {topStats.topWicketTaker ? (
-          <div className="bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl shadow-lg p-6 text-white">
-            <h3 className="text-xl font-bold mb-2 flex items-center gap-2"><TrendingUp /> Top Wicket Taker</h3>
-            <p className="text-2xl font-bold">{topStats.topWicketTaker.player.name}</p>
-            <p className="text-lg opacity-90">{topStats.topWicketTaker.totalWickets} Wickets</p>
-          </div>
-        ) : (
-          <div className="bg-slate-100 rounded-2xl p-6 text-center text-slate-500 flex items-center justify-center">
-            <p>No wicket taker data yet.</p>
-          </div>
-        )}
+
+          {recentMatches.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-lg opacity-20"></div>
+                <History size={64} className="relative mx-auto text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No matches played yet</h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                Start your cricket journey by creating your first match. Track scores, manage teams, and build your cricket legacy.
+              </p>
+              <button
+                onClick={() => onNavigate('newMatch')}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                <Play size={20} />
+                Create First Match
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentMatches.map((match) => (
+                <div
+                  key={match.id}
+                  className="group relative bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-lg font-bold text-gray-800">
+                        {match.team_a_name} vs {match.team_b_name}
+                      </span>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                        {match.overs} overs
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500 font-medium">
+                      {dayjs(match.match_date).format('MMM DD, YYYY')}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                        <span className="font-semibold text-gray-700">{match.team_a_name}</span>
+                        <span className="text-lg font-bold text-blue-600">{match.team_a_score}/{match.team_a_wickets}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                        <span className="font-semibold text-gray-700">{match.team_b_name}</span>
+                        <span className="text-lg font-bold text-purple-600">{match.team_b_score}/{match.team_b_wickets}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col justify-center space-y-2">
+                      <div className="text-center lg:text-right">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg shadow-md">
+                          <Trophy size={16} />
+                          {match.winner} Won
+                        </div>
+                      </div>
+                      <div className="text-center lg:text-right">
+                        <span className="text-sm text-gray-600">Man of the Match: </span>
+                        <span className="font-semibold text-orange-600">{match.man_of_match}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top Performers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {topStats.topScorer ? (
+            <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-8 text-white">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Target size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold">Top Run Scorer</h3>
+                </div>
+                <p className="text-3xl font-bold mb-2">{topStats.topScorer.player.name}</p>
+                <p className="text-xl opacity-90 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-white rounded-full"></span>
+                  {topStats.topScorer.totalRuns} Runs
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-8 text-center border-2 border-dashed border-gray-300">
+              <Target size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 font-medium">No run scorer data yet</p>
+              <p className="text-sm text-gray-500 mt-2">Play matches to see top performers</p>
+            </div>
+          )}
+
+          {topStats.topWicketTaker ? (
+            <div className="relative overflow-hidden bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 rounded-2xl shadow-2xl p-8 text-white">
+              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <TrendingUp size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold">Top Wicket Taker</h3>
+                </div>
+                <p className="text-3xl font-bold mb-2">{topStats.topWicketTaker.player.name}</p>
+                <p className="text-xl opacity-90 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-white rounded-full"></span>
+                  {topStats.topWicketTaker.totalWickets} Wickets
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-8 text-center border-2 border-dashed border-gray-300">
+              <TrendingUp size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 font-medium">No wicket taker data yet</p>
+              <p className="text-sm text-gray-500 mt-2">Play matches to see top performers</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

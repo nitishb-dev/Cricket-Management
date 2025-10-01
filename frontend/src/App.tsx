@@ -110,9 +110,9 @@ function App() {
 
   return (
     <CricketProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
         <Navigation activeView={activeView} onNavigate={setActiveView} />
-        <main className="py-6">{renderActiveView()}</main>
+        <main>{renderActiveView()}</main>
       </div>
     </CricketProvider>
   );

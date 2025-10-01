@@ -80,9 +80,9 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
     switch (step) {
       case "config":
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
+          <div className="card p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-3">
-              <Settings className="text-emerald-600" size={24} />
+              <Settings className="text-green-600" size={24} />
               <h2 className="text-2xl font-bold text-gray-800">
                 Match Configuration
               </h2>
@@ -96,8 +96,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
               <select
                 value={overs}
                 onChange={(e) => setOvers(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                           focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="input-field"
               >
                 {[5, 10, 15, 20, 30, 50].map((val) => (
                   <option key={val} value={val}>
@@ -118,8 +117,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   type="text"
                   value={teamAName}
                   onChange={(e) => setTeamAName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                             focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="input-field"
                   placeholder="Enter team name"
                 />
               </div>
@@ -131,8 +129,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   type="text"
                   value={teamBName}
                   onChange={(e) => setTeamBName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                             focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="input-field"
                   placeholder="Enter team name"
                 />
               </div>
@@ -141,9 +138,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             <button
               onClick={() => setStep("teamA")}
               disabled={!teamAName.trim() || !teamBName.trim()}
-              className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg 
-                         hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
-                         transition-colors font-medium"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next: Select {teamAName} Players
             </button>
@@ -159,7 +154,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
         const onNext = () => setStep(step === "teamA" ? "teamB" : "toss")
 
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+          <div className="card p-6 sm:p-8">
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={onBack}
@@ -194,9 +189,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
               <button
                 onClick={onNext}
                 disabled={selectedPlayers.length === 0}
-                className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg 
-                           hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
-                           transition-colors font-medium"
+                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {step === "teamA"
                   ? `Next: Select ${teamBName} Players`
@@ -209,7 +202,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
 
       case "toss":
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
+          <div className="card p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setStep("teamB")}
@@ -230,10 +223,10 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   <button
                     key={team}
                     onClick={() => setTossWinner(team)}
-                    className={`p-3 rounded-lg border-2 transition-all ${
+                    className={`p-3 rounded-xl border-2 transition-all ${
                       tossWinner === team
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold"
-                        : "border-slate-300 hover:border-slate-400"
+                        ? "border-green-500 bg-green-50 text-green-700 font-semibold"
+                        : "border-gray-300 hover:border-green-400"
                     }`}
                   >
                     {team}
@@ -252,10 +245,10 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
                   <button
                     key={choice}
                     onClick={() => setTossDecision(choice as "bat" | "bowl")}
-                    className={`p-3 rounded-lg border-2 transition-all ${
+                    className={`p-3 rounded-xl border-2 transition-all ${
                       tossDecision === choice
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold"
-                          : "border-slate-300 hover:border-slate-400"
+                          ? "border-green-500 bg-green-50 text-green-700 font-semibold"
+                          : "border-gray-300 hover:border-green-400"
                     }`}
                   >
                     {choice === "bat" ? "Bat First" : "Bowl First"}
@@ -265,7 +258,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             </div>
 
             {/* Summary */}
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
               <h3 className="font-semibold text-slate-800 mb-2">Match Summary</h3>
               <div className="text-sm text-slate-700 space-y-1">
                 <p>
@@ -287,9 +280,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
             <button
               onClick={handleStartMatch}
               disabled={!tossWinner}
-              className="w-full px-6 py-3 bg-emerald-600 text-white text-lg rounded-lg 
-                         hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed 
-                         transition-colors font-semibold flex items-center justify-center gap-2"
+              className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Play size={20} />
               Start Match
@@ -303,18 +294,28 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
-            {rematchData ? "Rematch Setup" : "New Match Setup"}
-          </h1>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
-          >
-            Cancel
-          </button>
+    <div className="page-container">
+      <div className="content-container">
+        <div className="card p-6 sm:p-8 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-primary rounded-2xl">
+                <Settings className="text-white w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                  {rematchData ? "Rematch Setup" : "New Match Setup"}
+                </h1>
+                <p className="text-gray-600">Configure your cricket match</p>
+              </div>
+            </div>
+            <button
+              onClick={onCancel}
+              className="btn-outline"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
         {renderStep()}
       </div>

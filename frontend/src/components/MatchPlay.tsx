@@ -363,10 +363,10 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="page-container">
+      <div className="content-container space-y-8">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="card p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Trophy className="text-green-600" size={32} />
