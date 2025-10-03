@@ -226,10 +226,6 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 - Check your database credentials in `backend/.env`
 - Verify the database `cricket_management` exists
 
-### Port Already in Use
-
-- Change the PORT in `backend/.env` if 5000 is busy
-- Change the frontend port in `frontend/vite.config.ts` if 5173 is busy
 
 ## 🎉 Features Implemented
 
