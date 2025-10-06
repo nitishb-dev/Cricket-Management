@@ -111,16 +111,6 @@ Open your browser and navigate to `http://localhost:5173`
 
 ## 📋 Available Commands
 
-### Root Level Commands
-
-```bash
-npm run dev              # Start both frontend and backend
-npm run dev:frontend     # Start frontend only
-npm run dev:backend      # Start backend only
-npm run install:all      # Install all dependencies
-npm run build            # Build frontend for production
-```
-
 ### Frontend Commands (from frontend/ directory)
 
 ```bash
