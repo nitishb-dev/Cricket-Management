@@ -1,121 +1,41 @@
-import React, { useState } from "react";
-import { CricketProvider } from "./context/CricketContext";
-import { Navigation } from "./components/Navigation";
-import { Dashboard } from "./components/Dashboard";
-import { PlayerManagement } from "./components/PlayerManagement";
-import { MatchSetup } from "./components/MatchSetup";
-import { MatchPlay } from "./components/MatchPlay";
-import { MatchHistory } from "./components/MatchHistory";
-import { PlayerStats } from "./components/PlayerStats";
-import { MatchData } from "./types/cricket";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CricketProvider } from './context/CricketContext';
+import { AdminLogin } from './components/AdminLogin';
+import MainLayout from './MainLayout';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Dashboard } from './components/Dashboard';
+import { PlayerManagement } from './components/PlayerManagement';
+import { MatchSetup } from './components/MatchSetup';
+import { MatchPlay } from './components/MatchPlay';
+import { MatchHistory } from './components/MatchHistory';
+import { PlayerStats } from './components/PlayerStats';
 
-// Extend MatchData for live play
-export interface CurrentMatch extends MatchData {
-  teamAScore: number;
-  teamBScore: number;
-  teamAWickets: number;
-  teamBWickets: number;
-  currentOver: number;
-  currentBall: number;
-  battingTeam: "A" | "B";
-}
-
-type ActiveView = "dashboard" | "players" | "newMatch" | "playMatch" | "history" | "stats";
-
-function App() {
-  const [activeView, setActiveView] = useState<ActiveView>("dashboard");
-  const [currentMatch, setCurrentMatch] = useState<CurrentMatch | null>(null);
-  const [rematchData, setRematchData] = useState<MatchData | null>(null);
-
-  const handleStartMatch = (matchData: MatchData) => {
-    const battingTeam =
-      matchData.tossDecision === "bat"
-        ? matchData.tossWinner === matchData.teamA.name
-          ? "A"
-          : "B"
-        : matchData.tossWinner === matchData.teamA.name
-        ? "B"
-        : "A";
-
-    const newMatch: CurrentMatch = {
-      ...matchData,
-      teamAScore: 0,
-      teamBScore: 0,
-      teamAWickets: 0,
-      teamBWickets: 0,
-      currentOver: 0,
-      currentBall: 0,
-      battingTeam,
-    };
-
-    setCurrentMatch(newMatch);
-    setActiveView("playMatch");
-    setRematchData(null);
-  };
-
-  const handleMatchComplete = () => {
-    setCurrentMatch(null);
-    setActiveView("history");
-  };
-
-  const handleRematch = (matchData: MatchData) => {
-    setRematchData(matchData);
-    setActiveView("newMatch");
-  };
-
-  const renderActiveView = () => {
-    switch (activeView) {
-      case "dashboard":
-        return <Dashboard onNavigate={setActiveView} />;
-
-      case "players":
-        return <PlayerManagement />;
-
-      case "newMatch":
-        return (
-          <MatchSetup
-            onStartMatch={handleStartMatch}
-            onCancel={() => {
-              setActiveView("dashboard");
-              setRematchData(null);
-            }}
-            rematchData={rematchData || undefined}
-          />
-        );
-
-      case "playMatch":
-        return currentMatch ? (
-          <MatchPlay
-            matchData={currentMatch}
-            onMatchComplete={handleMatchComplete}
-            onCancel={() => {
-              setCurrentMatch(null);
-              setActiveView("dashboard");
-            }}
-          />
-        ) : (
-          <Dashboard onNavigate={setActiveView} />
-        );
-
-      case "history":
-        return <MatchHistory onRematch={handleRematch} />;
-
-      case "stats":
-        return <PlayerStats />;
-
-      default:
-        return <Dashboard onNavigate={setActiveView} />;
-    }
-  };
-
+const App: React.FC = () => {
   return (
-    <CricketProvider>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation activeView={activeView} onNavigate={setActiveView} />
-        <main className="py-6">{renderActiveView()}</main>
-      </div>
-    </CricketProvider>
+    <AuthProvider>
+      <CricketProvider>
+        <Routes>
+          <Route path="/admin-login" element={<AdminLogin />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="players" element={<PlayerManagement />} />
+              <Route path="new-match" element={<MatchSetup />} />
+              <Route path="play-match" element={<MatchPlay />} />
+              <Route path="history" element={<MatchHistory />} />
+              <Route path="stats" element={<PlayerStats />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </CricketProvider>
+    </AuthProvider>
   );
-}
+};
 
 export default App;

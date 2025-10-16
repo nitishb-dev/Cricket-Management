@@ -301,3 +301,9 @@ export type SaveMatchPayload = Omit<MatchData, 'currentInning' | 'id'> & {
 }
 
 export type SaveMatchResponse = { id: string }
+
+export interface RematchData {
+  teamA: MatchTeam
+  teamB: MatchTeam
+  overs: number
+}
