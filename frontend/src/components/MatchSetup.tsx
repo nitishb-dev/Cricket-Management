@@ -1,24 +1,20 @@
 import React, { useState } from "react"
 import { Play, Settings, ArrowLeft } from "lucide-react"
+import { useOutletContext, useLocation } from "react-router-dom"
 import { useCricket } from "../context/CricketContext"
 import { PlayerManagement } from "./PlayerManagement"
-import { Player, MatchData, MatchTeam } from "../types/cricket"
+import { Player, MatchData, RematchData } from "../types/cricket"
 
-interface MatchSetupProps {
+interface MatchSetupContext {
   onStartMatch: (matchData: MatchData) => void
-  onCancel: () => void
-  rematchData?: {
-    teamA: MatchTeam
-    teamB: MatchTeam
-    overs: number
-  }
+  onCancelSetup: () => void
 }
 
-export const MatchSetup: React.FC<MatchSetupProps> = ({
-  onStartMatch,
-  onCancel,
-  rematchData,
-}) => {
+export const MatchSetup: React.FC = () => {
+  const { onStartMatch, onCancelSetup } = useOutletContext<MatchSetupContext>()
+  const location = useLocation()
+  const rematchData: RematchData | null = location.state as RematchData | null
+
   useCricket()
   const [step, setStep] = useState<"config" | "teamA" | "teamB" | "toss">("config")
   const [overs, setOvers] = useState<number>(rematchData?.overs || 20)
@@ -310,7 +306,7 @@ export const MatchSetup: React.FC<MatchSetupProps> = ({
               </div>
             </div>
             <button
-              onClick={onCancel}
+              onClick={onCancelSetup}
               className="btn-outline"
             >
               Cancel

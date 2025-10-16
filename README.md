@@ -56,15 +56,22 @@ CricketManagementApp/
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- A Supabase account
-- npm or yarn
+- **Node.js**: v16 or higher.
+- **npm**: (comes with Node.js).
+- **Supabase Account**: A free account at [supabase.com](https://supabase.com).
 
 ### 1. Install Dependencies
 
+Run this command from the root `CricketManagementApp/` directory to install dependencies for both the frontend and backend.
+
 ```bash
-# Install all dependencies (frontend + backend)
+# If you have a root package.json with an "install:all" script:
 npm run install:all
+
+# Otherwise, install for each part manually:
+cd frontend && npm install
+cd ../backend && npm install
+cd ..
 ```
 
 ### 2. Database Setup

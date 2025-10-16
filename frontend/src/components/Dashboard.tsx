@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { Trophy, Users, History, Calendar, Play, Target, TrendingUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useCricket } from '../context/CricketContext'
 import dayjs from 'dayjs'
+import { PlayerStats } from '../types/cricket'
 
-type ActiveView = 'dashboard' | 'players' | 'newMatch' | 'playMatch' | 'history' | 'stats'
+export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
 
-interface DashboardProps {
-  onNavigate: (view: ActiveView) => void
-}
-
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { players, matches, loading, getAllPlayerStats } = useCricket()
   const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3))
   const [topStats, setTopStats] = useState<{
-    topScorer: any | null
-    topWicketTaker: any | null
+    topScorer: PlayerStats | null
+    topWicketTaker: PlayerStats | null
   }>({
     topScorer: null,
     topWicketTaker: null
@@ -40,7 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     if (matches.length > 0) {
       fetchTopPlayers()
     }
-  }, [matches])
+  }, [matches, getAllPlayerStats])
 
   const stats = [
     {
@@ -48,21 +46,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       value: players.length,
       icon: Users,
       gradient: 'from-green-500 to-green-600',
-      action: () => onNavigate('players')
+      action: () => navigate('/players')
     },
     {
       title: 'Matches Played',
       value: matches.length,
       icon: History,
       gradient: 'from-orange-500 to-orange-600',
-      action: () => onNavigate('history')
+      action: () => navigate('/history')
     },
     {
       title: 'Active Season',
       value: '2025',
       icon: Calendar,
       gradient: 'from-blue-500 to-blue-600',
-      action: () => onNavigate('stats')
+      action: () => navigate('/stats')
     }
   ]
 
@@ -103,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
             <div className="flex justify-center">
               <button
-                onClick={() => onNavigate('newMatch')}
+                onClick={() => navigate('/new-match')}
                 className="btn-secondary group flex items-center gap-3"
               >
                 <Play size={24} className="group-hover:rotate-12 transition-transform" />
@@ -149,7 +147,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               Recent Matches
             </h2>
             <button
-              onClick={() => onNavigate('history')}
+              onClick={() => navigate('/history')}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               View All
@@ -168,7 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 Start your cricket journey by creating your first match. Track scores, manage teams, and build your cricket legacy.
               </p>
               <button
-                onClick={() => onNavigate('newMatch')}
+                onClick={() => navigate('/new-match')}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 <Play size={20} />

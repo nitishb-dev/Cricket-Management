@@ -1,20 +1,22 @@
 import React from 'react'
-import { Home, Users, Plus, History, BarChart3, Trophy } from 'lucide-react'
+import { Home, Users, Plus, History, BarChart3, Trophy, LogOut } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
-type ActiveView = 'dashboard' | 'players' | 'newMatch' | 'playMatch' | 'history' | 'stats'
+type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats'
 
 interface NavigationProps {
   activeView: ActiveView
-  onNavigate: (view: ActiveView) => void
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }) => {
+export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
+  const { logout } = useAuth()
   const navItems = [
-    { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: Home },
-    { id: 'players' as ActiveView, label: 'Players', icon: Users },
-    { id: 'newMatch' as ActiveView, label: 'New Match', icon: Plus },
-    { id: 'history' as ActiveView, label: 'History', icon: History },
-    { id: 'stats' as ActiveView, label: 'Statistics', icon: BarChart3 },
+    { id: 'dashboard' as ActiveView, path: '/dashboard', label: 'Dashboard', icon: Home },
+    { id: 'players' as ActiveView, path: '/players', label: 'Players', icon: Users },
+    { id: 'new-match' as ActiveView, path: '/new-match', label: 'New Match', icon: Plus },
+    { id: 'history' as ActiveView, path: '/history', label: 'History', icon: History },
+    { id: 'stats' as ActiveView, path: '/stats', label: 'Statistics', icon: BarChart3 },
   ]
 
   return (
@@ -44,9 +46,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
                 const isActive = activeView === item.id
 
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => onNavigate(item.id)}
+                    to={item.path}
                     aria-label={item.label}
                     className={`group relative flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
                       isActive
@@ -59,9 +61,17 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
                     {isActive && (
                       <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-green-700 rounded-full"></div>
                     )}
-                  </button>
+                  </Link>
                 )
               })}
+              <button
+                onClick={logout}
+                aria-label="Logout"
+                className="group relative flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 text-orange-100 hover:text-white hover:bg-orange-600/50 backdrop-blur-sm"
+              >
+                <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+                <span className="hidden xl:block">Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -84,9 +94,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
                 const isActive = activeView === item.id
 
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => onNavigate(item.id)}
+                    to={item.path}
                     aria-label={item.label}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
                       isActive
@@ -96,9 +106,17 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
                   >
                     <Icon size={18} />
                     <span className="text-sm">{item.label}</span>
-                  </button>
+                  </Link>
                 )
               })}
+              <button
+                onClick={logout}
+                aria-label="Logout"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 text-orange-100 hover:text-white hover:bg-orange-600/50"
+              >
+                <LogOut size={18} />
+                <span className="text-sm">Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -121,9 +139,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
             const isActive = activeView === item.id
 
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => onNavigate(item.id)}
+                to={item.path}
                 aria-label={item.label}
                 className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 ${
                   isActive
@@ -140,9 +158,22 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, onNavigate }
                 {isActive && (
                   <div className="w-1 h-1 bg-white rounded-full mt-1"></div>
                 )}
-              </button>
+              </Link>
             )
           })}
+          <button
+            key="logout"
+            onClick={logout}
+            aria-label="Logout"
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 text-orange-100 hover:text-white active:bg-orange-700/30"
+          >
+            <div className="p-1 rounded-lg">
+              <LogOut size={20} />
+            </div>
+            <span className="text-xs font-medium truncate w-full text-center">
+              Logout
+            </span>
+          </button>
         </div>
       </nav>
     </>

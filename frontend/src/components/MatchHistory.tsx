@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
 import { History, Trophy, Calendar, Search, Filter, RotateCcw, Trash2 } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
 import { useCricket } from '../context/CricketContext'
 import { Match, MatchPlayerStats, MatchData, TeamPlayer } from '../types/cricket'
 import dayjs from 'dayjs'
 
-interface MatchHistoryProps {
+interface MatchHistoryContext {
   onRematch: (matchData: MatchData) => void
 }
 
-export const MatchHistory: React.FC<MatchHistoryProps> = ({ onRematch }) => {
+export const MatchHistory: React.FC = () => {
+  const { onRematch } = useOutletContext<MatchHistoryContext>()
   const { matches, players, getMatchPlayerStats, loading, deleteMatch } = useCricket()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)

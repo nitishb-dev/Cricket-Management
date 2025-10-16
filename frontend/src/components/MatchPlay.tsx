@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { Trophy, Target, Clock, Save, AlertCircle } from 'lucide-react'
+import { useOutletContext, Navigate } from 'react-router-dom'
 import { useCricket } from '../context/CricketContext'
 import { MatchData, TeamPlayer, SaveMatchPayload } from '../types/cricket'
 
-interface MatchPlayProps {
-  matchData: MatchData
+interface MatchPlayContext {
+  currentMatch: MatchData | null
   onMatchComplete: () => void
-  onCancel: () => void
+  onCancelMatch: () => void
 }
 
 type BallOutcome = 'dot' | '1' | '2' | '3' | '4' | '6' | 'wide' | 'noball' | 'wicket'
@@ -30,22 +31,12 @@ interface InningStats {
   ballsThisOver: number
 }
 
-export const MatchPlay: React.FC<MatchPlayProps> = ({
-  matchData: initialMatchData,
+const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: () => void; onCancelMatch: () => void }> = ({
+  initialMatchData,
   onMatchComplete,
-  onCancel
+  onCancelMatch,
 }) => {
   const { saveMatch, players } = useCricket() // <-- Get 'players' from context
-
-  // Match state
-  const [matchData, setMatchData] = useState<MatchData>(initialMatchData)
-  const [currentInning, setCurrentInning] = useState<1 | 2>(1)
-  const [isMatchComplete, setIsMatchComplete] = useState(false)
-  const [winner, setWinner] = useState<string>('')
-  const [manOfMatch, setManOfMatch] = useState<string>('')
-  const [dismissedBatsmen, setDismissedBatsmen] = useState<Set<string | number>>(new Set())
-  const [currentOverBowler, setCurrentOverBowler] = useState<string | number | null>(null)
-  const [previousOverBowler, setPreviousOverBowler] = useState<string | number | null>(null)
 
   // Inning stats
   const [inning1Stats, setInning1Stats] = useState<InningStats>({
@@ -55,16 +46,20 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     runs: 0, wickets: 0, balls: 0, overs: 0, ballsThisOver: 0
   })
 
+  const [matchData, setMatchData] = useState<MatchData>(initialMatchData);
+  const [currentInning, setCurrentInning] = useState<1 | 2>(1);
+  const [isMatchComplete, setIsMatchComplete] = useState(false);
+  const [winner, setWinner] = useState<string>('');
+  const [manOfMatch, setManOfMatch] = useState<string>('');
+  const [dismissedBatsmen, setDismissedBatsmen] = useState<Set<string | number>>(new Set());
+  const [currentOverBowler, setCurrentOverBowler] = useState<string | number | null>(null);
+  const [previousOverBowler, setPreviousOverBowler] = useState<string | number | null>(null);
+
   // UI state
   const [selectedBatsman, setSelectedBatsman] = useState<TeamPlayer | null>(null)
   const [selectedBowler, setSelectedBowler] = useState<TeamPlayer | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const currentBattingTeam = getCurrentBattingTeam()
-  const currentBowlingTeam = getCurrentBowlingTeam()
-  const currentStats = currentInning === 1 ? inning1Stats : inning2Stats
-  const setCurrentStats = currentInning === 1 ? setInning1Stats : setInning2Stats
 
   // Ensure selected players are valid
   useEffect(() => {
@@ -78,17 +73,21 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     }
   }, [players, selectedBatsman, selectedBowler]);
 
+  const currentBattingTeam = getCurrentBattingTeam();
+  const currentBowlingTeam = getCurrentBowlingTeam();
+  const currentStats = currentInning === 1 ? inning1Stats : inning2Stats;
+  const setCurrentStats = currentInning === 1 ? setInning1Stats : setInning2Stats;
 
-  function getCurrentBattingTeam() {
+  function getCurrentBattingTeam(inning?: 1 | 2) {
     const { teamA, teamB, tossWinner, tossDecision } = matchData
+    const inningToUse = inning || currentInning;
 
-    if (currentInning === 1) {
+    if (inningToUse === 1) {
       return (tossWinner === teamA.name && tossDecision === 'bat') ||
              (tossWinner === teamB.name && tossDecision === 'bowl')
              ? teamA : teamB
     } else {
-      const firstInningBattingTeam = (tossWinner === teamA.name && tossDecision === 'bat') ||
-                                     (tossWinner === teamB.name && tossDecision === 'bowl')
+      const firstInningBattingTeam = (tossWinner === teamA.name && tossDecision === 'bat') || (tossWinner === teamB.name && tossDecision === 'bowl')
                                      ? teamA : teamB
       return firstInningBattingTeam === teamA ? teamB : teamA
     }
@@ -273,27 +272,19 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     console.log("First inning score:", firstInningScore);
     console.log("Second inning score:", secondInningScore);
 
-    const teamThatBattedFirst =
-      matchData.tossDecision === "bat"
-        ? matchData.tossWinner === matchData.teamA.name
-          ? matchData.teamA
-          : matchData.teamB
-        : matchData.tossWinner === matchData.teamA.name
-          ? matchData.teamB
-          : matchData.teamA;
-
-    const teamThatChased =
-      teamThatBattedFirst.name === matchData.teamA.name ? matchData.teamB : matchData.teamA;
+    const firstInningBattingTeamName = getCurrentBattingTeam(1).name;
 
     let matchWinner = "";
 
     if (secondInningScore > firstInningScore) {
-      const totalPlayers = teamThatChased.players.length;
+      const chasingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamB : matchData.teamA; // Corrected
+      const totalPlayers = chasingTeam.players.length;
       const wicketsLeft = totalPlayers - secondInningStats.wickets;
-      matchWinner = `${teamThatChased.name} won the match by ${wicketsLeft} wickets`;
+      matchWinner = `${chasingTeam.name} won by ${wicketsLeft} wickets`;
     } else if (firstInningScore > secondInningScore) {
+      const firstBattingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamA : matchData.teamB; // Corrected
       const runDifference = firstInningScore - secondInningScore;
-      matchWinner = `${teamThatBattedFirst.name} won the match by ${runDifference} runs`;
+      matchWinner = `${firstBattingTeam.name} won by ${runDifference} runs`;
     } else {
       matchWinner = "Match Tied";
     }
@@ -386,7 +377,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
               </div>
             </div>
             <button
-              onClick={onCancel}
+              onClick={onCancelMatch}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               Exit Match
@@ -611,7 +602,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
               <Trophy className="mx-auto mb-4 text-yellow-500" size={48} />
               <h2 className="text-2xl font-bold text-gray-800">Match Complete!</h2>
               <p className="text-lg text-green-600 font-semibold">
-                {winner === 'Match Tied' ? 'Match Tied' : `${winner} Won`}
+                {winner === 'Match Tied' ? 'Match Tied' : `${winner}`}
               </p>
               <div className="mt-4">
                 <h3 className="text-xl font-bold text-yellow-500">
@@ -649,7 +640,7 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
                 )}
               </button>
               <button
-                onClick={onCancel}
+                onClick={onCancelMatch}
                 className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Exit Without Saving
@@ -661,3 +652,14 @@ export const MatchPlay: React.FC<MatchPlayProps> = ({
     </div>
   )
 }
+
+export const MatchPlay: React.FC = () => {
+  const { currentMatch, onMatchComplete, onCancelMatch } = useOutletContext<MatchPlayContext>();
+
+  if (!currentMatch) {
+    // If there's no match data, we can't render this page. Redirect.
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <MatchPlayCore initialMatchData={currentMatch} onMatchComplete={onMatchComplete} onCancelMatch={onCancelMatch} />;
+};
