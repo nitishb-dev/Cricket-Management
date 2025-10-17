@@ -1,38 +1,37 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { MatchData } from './types/cricket';
 
 type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats';
 
 const MainLayout: React.FC = () => {
-  const [currentMatch, setCurrentMatch] = useState<MatchData | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [currentMatch, setCurrentMatch] = useState<MatchData | null>(() => {
+    // Restore match from location state on refresh
+    return location.state?.currentMatch || null;
+  });
 
   // Derive active view from the URL path
-  const getActiveView = () => {
+  const activeView = useMemo(() => {
     const path = location.pathname.substring(1); // remove leading '/'
     const validViews: ActiveView[] = ['dashboard', 'players', 'new-match', 'play-match', 'history', 'stats'];
     if (validViews.includes(path as ActiveView)) {
       return path as ActiveView;
     }
     return 'dashboard';
-  };
+  }, [location.pathname]);
 
   const handleStartMatch = (matchData: MatchData) => {
     setCurrentMatch(matchData);
-    navigate('/play-match');
+    // Persist match data in location state for resilience to page reloads
+    navigate('/play-match', { state: { currentMatch: matchData } });
   };
 
   const handleMatchComplete = () => {
     setCurrentMatch(null);
     navigate('/history');
-  };
-
-  const handleCancelMatch = () => {
-    setCurrentMatch(null);
-    navigate('/dashboard');
   };
 
   const handleRematch = (matchData: MatchData) => {
@@ -43,16 +42,25 @@ const MainLayout: React.FC = () => {
     navigate('/dashboard');
   };
 
+  // If we are on the /play-match route but have no match data, redirect to dashboard
+  if (location.pathname === '/play-match' && !currentMatch) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navigation activeView={getActiveView() as ActiveView} />
-      <main>
+      <Navigation activeView={activeView} />
+      {/* Add bottom padding to avoid content being hidden under mobile nav;
+          add small top padding so sticky headers don't overlap content */}
+      <main className="pt-4 pb-20">
         <Outlet context={{ 
           onStartMatch: handleStartMatch,
           onMatchComplete: handleMatchComplete,
-          onCancelMatch: handleCancelMatch,
+          // onCancelMatch is now the same as onCancelSetup
+          onCancelMatch: handleCancelSetup,
           onRematch: handleRematch,
           onCancelSetup: handleCancelSetup,
+          // Pass the current match data through context
           currentMatch,
         }} />
       </main>

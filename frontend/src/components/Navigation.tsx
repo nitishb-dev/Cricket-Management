@@ -80,11 +80,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
       {/* Tablet Navigation */}
       <nav className="hidden md:block lg:hidden bg-gradient-primary shadow-xl">
         <div className="px-4">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             {/* Compact Logo */}
             <div className="flex items-center gap-3">
-              <Trophy className="text-white" size={28} />
-              <h1 className="text-xl font-bold text-white">Cricket Manager</h1>
+              <Trophy className="text-white" size={24} />
+              <h1 className="text-lg font-bold text-white">Cricket Manager</h1>
             </div>
 
             {/* Compact Nav */}
@@ -105,7 +105,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
                     }`}
                   >
                     <Icon size={18} />
-                    <span className="text-sm">{item.label}</span>
+                    <span className="text-sm hidden sm:inline">{item.label}</span>
                   </Link>
                 )
               })}
@@ -115,25 +115,42 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 text-orange-100 hover:text-white hover:bg-orange-600/50"
               >
                 <LogOut size={18} />
-                <span className="text-sm">Logout</span>
+                <span className="text-sm hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden bg-gradient-primary shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-center px-4 py-4 border-b border-green-500">
+      {/* Mobile Header (still in flow) - logo left, logout right so logout is always visible on small screens */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-green-500 bg-gradient-primary">
           <div className="flex items-center gap-3">
-            <Trophy className="text-white" size={24} />
-            <h1 className="text-lg font-bold text-white">Cricket Manager</h1>
+            <Trophy className="text-white" size={20} />
+            <h1 className="text-sm font-bold text-white">Cricket Manager</h1>
           </div>
-        </div>
 
-        {/* Bottom Tab Bar */}
-        <div className="flex bg-green-600/50 backdrop-blur-sm">
+          {/* Visible logout button for small screens */}
+          <button
+            onClick={logout}
+            aria-label="Logout"
+            className="flex items-center gap-2 text-orange-100 hover:text-white hover:bg-orange-600/30 px-3 py-2 rounded-lg transition"
+          >
+            <LogOut size={18} />
+            <span className="sr-only">Logout</span>
+            {/* if you want visible label on slightly larger small screens, use:
+          <span className="hidden sm:inline text-sm text-white">Logout</span>
+         but sr-only keeps DOM accessible without taking space */}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Tab Bar (fixed) - logout removed from bottom bar */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-green-600/60 backdrop-blur-sm border-t border-green-500"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }} /* support iOS safe area */
+      >
+        <div className="flex">
           {navItems.map(item => {
             const Icon = item.icon
             const isActive = activeView === item.id
@@ -143,14 +160,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
                 key={item.id}
                 to={item.path}
                 aria-label={item.label}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 ${
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-2 transition-all duration-300 ${
                   isActive
                     ? 'text-white bg-green-700/50'
                     : 'text-green-100 hover:text-white active:bg-green-700/30'
                 }`}
               >
                 <div className={`p-1 rounded-lg ${isActive ? 'bg-white/20' : ''}`}>
-                  <Icon size={20} className={isActive ? 'animate-pulse' : ''} />
+                  <Icon size={18} className={isActive ? 'animate-pulse' : ''} />
                 </div>
                 <span className="text-xs font-medium truncate w-full text-center">
                   {item.label}
@@ -161,21 +178,8 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
               </Link>
             )
           })}
-          <button
-            key="logout"
-            onClick={logout}
-            aria-label="Logout"
-            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 text-orange-100 hover:text-white active:bg-orange-700/30"
-          >
-            <div className="p-1 rounded-lg">
-              <LogOut size={20} />
-            </div>
-            <span className="text-xs font-medium truncate w-full text-center">
-              Logout
-            </span>
-          </button>
         </div>
-      </nav>
+      </div>
     </>
   )
 }

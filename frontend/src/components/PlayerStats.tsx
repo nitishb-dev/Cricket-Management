@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { BarChart3, Trophy, Target, Award, TrendingUp, User } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
 
-const colorMap = {
-  yellow: { from: 'from-yellow-400', to: 'to-yellow-500', text: 'text-yellow-100' },
-  red: { from: 'from-red-400', to: 'to-red-500', text: 'text-red-100' },
-  green: { from: 'from-green-400', to: 'to-green-500', text: 'text-green-100' },
-  purple: { from: 'from-purple-400', to: 'to-purple-500', text: 'text-purple-100' }
-} as const
+// const colorMap = {
+//   yellow: { from: 'from-yellow-400', to: 'to-yellow-500', text: 'text-yellow-100' },
+//   red: { from: 'from-red-400', to: 'to-red-500', text: 'text-red-100' },
+//   green: { from: 'from-green-400', to: 'to-green-500', text: 'text-green-100' },
+//   purple: { from: 'from-purple-400', to: 'to-purple-500', text: 'text-purple-100' }
+// } as const
 
 export const PlayerStats: React.FC = () => {
   const { getAllPlayerStats, loading } = useCricket()
@@ -16,11 +16,7 @@ export const PlayerStats: React.FC = () => {
   const [sortBy, setSortBy] = useState<'runs' | 'wickets' | 'matches' | 'wins' | 'mom'>('runs')
   const [loadingStats, setLoadingStats] = useState(false)
 
-  useEffect(() => {
-    loadStats()
-  }, [getAllPlayerStats])
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     setLoadingStats(true)
     try {
       const stats = await getAllPlayerStats()
@@ -31,7 +27,11 @@ export const PlayerStats: React.FC = () => {
     } finally {
       setLoadingStats(false)
     }
-  }
+  }, [getAllPlayerStats])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   const getTopPerformers = (key: keyof Omit<CricketPlayerStats, 'player'>) => {
     if (playerStats.length === 0) return []
@@ -58,7 +58,7 @@ export const PlayerStats: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container w-full overflow-x-hidden">
       <div className="content-container space-y-8">
         {/* Header */}
         <div className="card p-6 sm:p-8">
@@ -74,8 +74,9 @@ export const PlayerStats: React.FC = () => {
             </div>
             <button
               onClick={loadStats}
-              className="btn-primary"
+              className="btn-primary flex items-center gap-2"
             >
+              <RefreshCw size={16} className={loadingStats ? 'animate-spin' : ''} />
               Refresh Stats
             </button>
           </div>
