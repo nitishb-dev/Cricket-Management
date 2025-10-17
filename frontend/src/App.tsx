@@ -11,20 +11,36 @@ import { MatchSetup } from './components/MatchSetup';
 import { MatchPlay } from './components/MatchPlay';
 import { MatchHistory } from './components/MatchHistory';
 import { PlayerStats } from './components/PlayerStats';
+import { PlayerLogin } from './components/PlayerLogin';
+import LoginChoice from './components/LoginChoice';
+import PlayerDashboard from './components/PlayerDashboard';
+import PlayerHistory from './components/PlayerHistory';
+import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
 const router = createBrowserRouter([
+  // Public login choice and auth routes
+  {
+    path: '/',
+    element: <LoginChoice />,
+  },
   {
     path: '/admin-login',
     element: <AdminLogin />,
   },
   {
-    element: <ProtectedRoute />,
+    path: '/player-login',
+    element: <PlayerLogin />,
+  },
+
+  // New protected admin area sits under /app/*
+  {
+    path: '/app',
+    element: <ProtectedRoute />, // only matches /app and its children
     children: [
       {
-        path: '/',
         element: <MainLayout />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
+          { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <Dashboard /> },
           { path: 'players', element: <PlayerManagement /> },
           { path: 'new-match', element: <MatchSetup /> },
@@ -35,10 +51,30 @@ const router = createBrowserRouter([
       },
     ],
   },
+
+  // Backwards-compatible redirects from legacy routes -> new /app/* routes
+  { path: '/dashboard', element: <Navigate to="/app/dashboard" replace /> },
+  { path: '/players', element: <Navigate to="/app/players" replace /> },
+  { path: '/new-match', element: <Navigate to="/app/new-match" replace /> },
+  { path: '/play-match', element: <Navigate to="/app/play-match" replace /> },
+  { path: '/history', element: <Navigate to="/app/history" replace /> },
+  { path: '/stats', element: <Navigate to="/app/stats" replace /> },
+
+  // Player protected area
   {
-    path: '*',
-    element: <Navigate to="/" replace />,
+    path: '/player',
+    element: <PlayerProtectedRoute />,
+    children: [
+      { path: 'dashboard', element: <PlayerDashboard /> },
+      { path: 'history', element: <PlayerHistory /> },
+      // The stats page can be shared or a player-specific one can be created.
+      // For now, let's assume we can reuse the admin one in a read-only fashion for players.
+      { path: 'stats', element: <PlayerStats /> },
+    ],
   },
+
+  // Fallback
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 const App: React.FC = () => {

@@ -15,27 +15,27 @@ const MainLayout: React.FC = () => {
 
   // Derive active view from the URL path
   const activeView = useMemo(() => {
-    const path = location.pathname.substring(1); // remove leading '/'
+    const path = location.pathname.split('/').pop() || 'dashboard';
     const validViews: ActiveView[] = ['dashboard', 'players', 'new-match', 'play-match', 'history', 'stats'];
     if (validViews.includes(path as ActiveView)) {
       return path as ActiveView;
     }
-    return 'dashboard';
+    return 'dashboard'; // Fallback for /app/
   }, [location.pathname]);
 
   const handleStartMatch = (matchData: MatchData) => {
     setCurrentMatch(matchData);
     // Persist match data in location state for resilience to page reloads
-    navigate('/play-match', { state: { currentMatch: matchData } });
+    navigate('/app/play-match', { state: { currentMatch: matchData } });
   };
 
   const handleMatchComplete = () => {
     setCurrentMatch(null);
-    navigate('/history');
+    navigate('/app/history');
   };
 
   const handleRematch = (matchData: MatchData) => {
-    navigate('/new-match', { state: { teamA: matchData.teamA, teamB: matchData.teamB, overs: matchData.overs } });
+    navigate('/app/new-match', { state: { teamA: matchData.teamA, teamB: matchData.teamB, overs: matchData.overs } });
   };
 
   const handleCancelSetup = () => {
@@ -43,8 +43,8 @@ const MainLayout: React.FC = () => {
   };
 
   // If we are on the /play-match route but have no match data, redirect to dashboard
-  if (location.pathname === '/play-match' && !currentMatch) {
-    return <Navigate to="/dashboard" replace />;
+  if (location.pathname === '/app/play-match' && !currentMatch) {
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   return (

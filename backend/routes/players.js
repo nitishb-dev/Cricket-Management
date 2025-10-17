@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "../db.js";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const router = Router();
+const SALT_ROUNDS = 10;
 
 // Get all players
 router.get("/", async (req, res, next) => {
@@ -18,28 +21,66 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// Create player
+/**
+ * Create player
+ * - Accepts: { name, username?, password? }
+ * - If username not provided -> use name as username
+ * - If password not provided -> server generates a secure random token and returns it in response (one-time)
+ * - Stored in DB: password_hash only (never store plaintext)
+ */
 router.post("/", async (req, res, next) => {
-  const { name } = req.body;
+  // Only allow admin (your existing admin protection) to call this endpoint
+  const { name, username, password } = req.body;
   if (!name) {
     return res.status(400).json({ error: "Player name required" });
   }
 
   try {
+    // Choose username: provided || name
+    const usernameToUse = username ?? name;
+
+    // Generate random password if not provided
+    const rawPassword =
+      password && String(password).length > 0
+        ? String(password)
+        : crypto.randomBytes(6).toString("hex"); // 12 hex chars
+
+    // Hash password
+    const password_hash = await bcrypt.hash(rawPassword, SALT_ROUNDS);
+
     const id = uuidv4();
+
     const { data: player, error } = await supabase
       .from("players")
-      .insert({ id, name })
+      .insert({
+        id,
+        name,
+        username: usernameToUse,
+        password_hash,
+      })
       .select()
       .single();
 
     if (error) throw error;
 
-    res.status(201).json(player);
+    // Return created player and the raw password ONLY when the server generated it (or always if you prefer)
+    // If admin passed a password, they already know it; we only include it for generated passwords
+    const includePasswordInResponse = !password;
+
+    const responsePayload = {
+      player,
+      ...(includePasswordInResponse ? { generatedPassword: rawPassword } : {}),
+    };
+
+    res.status(201).json(responsePayload);
   } catch (err) {
-    // 23505 is the code for unique violation in PostgreSQL
-    if (err.code === "23505") {
-      return res.status(409).json({ error: "Player already exists" });
+    // Supabase/postgres unique violation commonly gives code '23505'
+    // If duplicate name/username occurs, return 409
+    const errCode = err?.code ?? err?.status ?? null;
+    if (errCode === "23505" || errCode === 23505) {
+      return res
+        .status(409)
+        .json({ error: "Player name/username already exists" });
     }
     next(err);
   }
@@ -84,8 +125,6 @@ router.put("/:id", async (req, res, next) => {
         .eq("man_of_match", oldName);
 
       if (manOfMatchError) {
-        // If this fails, we should ideally roll back the player name change.
-        // For simplicity here, we'll just log it. In a real app, a transaction would be better.
         console.error(
           "Failed to update man_of_match references:",
           manOfMatchError
@@ -95,11 +134,45 @@ router.put("/:id", async (req, res, next) => {
 
     res.json(updatedPlayer);
   } catch (err) {
-    if (err.code === "23505") {
+    const errCode = err?.code ?? err?.status ?? null;
+    if (errCode === "23505" || errCode === 23505) {
       return res
         .status(409)
         .json({ error: "A player with this name already exists" });
     }
+    next(err);
+  }
+});
+
+/**
+ * Reset a player's password (admin-only)
+ * POST /api/players/:id/reset-password
+ *
+ * Generates a secure random password, stores only the bcrypt hash, and returns
+ * the plaintext password in the response once so the admin can copy/send it.
+ *
+ * NOTE: This endpoint should be protected in a production app.
+ */
+router.post("/:id/reset-password", async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    // Generate a secure random password (12 hex chars)
+    const newPlain = crypto.randomBytes(6).toString("hex");
+    const newHash = await bcrypt.hash(newPlain, SALT_ROUNDS);
+
+    const { data: updated, error } = await supabase
+      .from("players")
+      .update({ password_hash: newHash })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!updated) return res.status(404).json({ error: "Player not found" });
+
+    // Return the generated plaintext once (admin should copy/send it)
+    return res.json({ player: updated, generatedPassword: newPlain });
+  } catch (err) {
     next(err);
   }
 });
@@ -127,10 +200,6 @@ router.delete("/:id", async (req, res, next) => {
 // Get all player stats
 router.get("/stats/all", async (req, res, next) => {
   try {
-    // This complex query is best handled by a PostgreSQL function (RPC).
-    // For now, we will fetch players and their stats separately and aggregate.
-    // This is less efficient but avoids a complex RPC setup for this migration.
-
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select(
@@ -206,6 +275,26 @@ router.get("/stats/:id", async (req, res, next) => {
       totalWins: stats.totalWins,
       manOfMatchCount: stats.manOfMatchCount,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get player match history
+router.get("/:id/history", async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    // Fetch match_player_stats rows for the player and include match metadata using Supabase relationship
+    const { data, error } = await supabase
+      .from("match_player_stats")
+      .select("*, matches(*)")
+      .eq("player_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    // Respond with the raw rows containing both stat and match info
+    res.json(data || []);
   } catch (err) {
     next(err);
   }

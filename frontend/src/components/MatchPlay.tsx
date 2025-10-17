@@ -166,7 +166,16 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
       newMatchData[battingTeamKey] = {
         ...newMatchData[battingTeamKey],
         players: newMatchData[battingTeamKey].players.map(p =>
-          p.player.id === selectedBatsman.player.id ? { ...p, runs: p.runs + ballEvent.runs } : p
+          p.player.id === selectedBatsman.player.id ? { 
+            ...p, 
+            runs: p.runs + ballEvent.runs,
+            // Increment the specific score type
+            ones: p.ones + (ballEvent.runs === 1 && !ballEvent.isExtra ? 1 : 0),
+            twos: p.twos + (ballEvent.runs === 2 ? 1 : 0),
+            threes: p.threes + (ballEvent.runs === 3 ? 1 : 0),
+            fours: p.fours + (ballEvent.runs === 4 ? 1 : 0),
+            sixes: p.sixes + (ballEvent.runs === 6 ? 1 : 0),
+          } : p
         )
       };
     }
@@ -276,16 +285,13 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
 
     let matchWinner = "";
 
-    if (secondInningScore > firstInningScore) {
-      const chasingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamB : matchData.teamA; // Corrected
-      const totalPlayers = chasingTeam.players.length;
-      const wicketsLeft = totalPlayers - secondInningStats.wickets;
-      matchWinner = `${chasingTeam.name} won by ${wicketsLeft} wickets`;
-    } else if (firstInningScore > secondInningScore) {
-      const firstBattingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamA : matchData.teamB; // Corrected
-      const runDifference = firstInningScore - secondInningScore;
-      matchWinner = `${firstBattingTeam.name} won by ${runDifference} runs`;
-    } else {
+    if (secondInningScore > firstInningScore) { // Chasing team wins
+      const chasingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamB : matchData.teamA;
+      matchWinner = chasingTeam.name;
+    } else if (firstInningScore > secondInningScore) { // Team batting first wins
+      const firstBattingTeam = firstInningBattingTeamName === matchData.teamA.name ? matchData.teamA : matchData.teamB;
+      matchWinner = firstBattingTeam.name;
+    } else { // Tie
       matchWinner = "Match Tied";
     }
 

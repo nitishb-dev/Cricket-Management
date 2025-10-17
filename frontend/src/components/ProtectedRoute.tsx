@@ -1,14 +1,15 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
+  const location = useLocation();
 
-  if (!isAuthenticated) {
-    // Redirect them to the /admin-login page, but save the current location they were
-    // trying to go to. This allows us to send them along to that page after they login.
-    return <Navigate to="/admin-login" replace />;
+  // Only allow authenticated admins to access the admin area (/app/*)
+  if (!isAuthenticated || role !== 'admin') {
+    // send non-admin (including players) back to the login choice
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   return <Outlet />;

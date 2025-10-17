@@ -7,19 +7,30 @@ type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'histor
 
 interface NavigationProps {
   activeView: ActiveView
+  role?: 'admin' | 'player'
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
+export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admin' }) => {
   const { logout, user } = useAuth()
   const navigate = useNavigate()
 
-  const navItems = [
-    { id: 'dashboard' as ActiveView, path: '/dashboard', label: 'Dashboard', icon: Home },
-    { id: 'players' as ActiveView, path: '/players', label: 'Players', icon: Users },
-    { id: 'new-match' as ActiveView, path: '/new-match', label: 'New Match', icon: Plus },
-    { id: 'history' as ActiveView, path: '/history', label: 'History', icon: History },
-    { id: 'stats' as ActiveView, path: '/stats', label: 'Statistics', icon: BarChart3 },
-  ]
+  // Admin nav goes to /app/* routes
+  const adminNav = [
+    { id: 'dashboard' as ActiveView, path: '/app/dashboard', label: 'Dashboard', icon: Home },
+    { id: 'players' as ActiveView, path: '/app/players', label: 'Players', icon: Users },
+    { id: 'new-match' as ActiveView, path: '/app/new-match', label: 'New Match', icon: Plus },
+    { id: 'history' as ActiveView, path: '/app/history', label: 'History', icon: History },
+    { id: 'stats' as ActiveView, path: '/app/stats', label: 'Statistics', icon: BarChart3 },
+  ];
+
+  // Player nav points to /player/* routes and only exposes read-only pages
+  const playerNav = [
+    { id: 'dashboard' as ActiveView, path: '/player/dashboard', label: 'Dashboard', icon: Home },
+    { id: 'history' as ActiveView, path: '/player/history', label: 'History', icon: History },
+    { id: 'stats' as ActiveView, path: '/player/stats', label: 'Statistics', icon: BarChart3 },
+  ];
+
+  const navItems = role === 'player' ? playerNav : adminNav;
 
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -27,7 +38,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!(e.target instanceof Node)) return
-      // If the click is inside any profile wrapper, keep the menu open
       const wrappers = document.querySelectorAll<HTMLElement>('.profile-menu-wrapper')
       for (const w of Array.from(wrappers)) {
         if (w.contains(e.target as Node)) {
@@ -67,16 +77,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
       <nav className="hidden lg:block bg-gradient-to-r from-green-700 via-green-600 to-green-700 shadow-2xl border-b-4 border-green-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+            {/* Logo left */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/20 rounded-full blur-lg"></div>
                 <Trophy className="relative text-white" size={40} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Cricket Manager
-                </h1>
+                <h1 className="text-2xl font-bold text-white">Cricket Manager</h1>
                 <p className="text-green-100 text-sm">Manage your cricket league</p>
               </div>
             </div>
@@ -107,7 +115,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
                 })}
               </div>
 
-              {/* Profile dropdown (desktop) */}
+              {/* Profile dropdown */}
               <div className="relative profile-menu-wrapper" ref={menuRef}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
@@ -118,7 +126,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
                   <div className="w-9 h-9 rounded-full bg-white text-green-700 font-bold flex items-center justify-center">
                     {initials}
                   </div>
-                  <span className="hidden md:inline text-white font-medium">{user ?? 'Admin'}</span>
+                  <span className="hidden md:inline text-white font-medium">{user ?? 'User'}</span>
                 </button>
 
                 {menuOpen && (
@@ -145,7 +153,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
         </div>
       </nav>
 
-      {/* Tablet Navigation */}
+      {/* Tablet, Mobile — same pattern as desktop; the nav uses same `navItems` list so player/admin variant is applied */}
       <nav className="hidden md:block lg:hidden bg-gradient-primary shadow-xl">
         <div className="px-4">
           <div className="flex items-center justify-between h-14">
