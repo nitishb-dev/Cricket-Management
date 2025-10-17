@@ -82,13 +82,18 @@ router.post("/", async (req, res, next) => {
 
     const matchId = uuidv4();
 
+    // Team A's total score is the sum of runs by their players
     const teamAScore = teamA.players.reduce((sum, p) => sum + (p.runs || 0), 0);
-    const teamAWickets = teamA.players.reduce(
+    // Team B's total score is the sum of runs by their players
+    const teamBScore = teamB.players.reduce((sum, p) => sum + (p.runs || 0), 0);
+
+    // Team A's wickets lost are the wickets taken by Team B's bowlers
+    const teamAWickets = teamB.players.reduce(
       (sum, p) => sum + (p.wickets || 0),
       0
     );
-    const teamBScore = teamB.players.reduce((sum, p) => sum + (p.runs || 0), 0);
-    const teamBWickets = teamB.players.reduce(
+    // Team B's wickets lost are the wickets taken by Team A's bowlers
+    const teamBWickets = teamA.players.reduce(
       (sum, p) => sum + (p.wickets || 0),
       0
     );

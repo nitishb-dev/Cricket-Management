@@ -15,6 +15,7 @@ import { PlayerLogin } from './components/PlayerLogin';
 import LoginChoice from './components/LoginChoice';
 import PlayerDashboard from './components/PlayerDashboard';
 import PlayerHistory from './components/PlayerHistory';
+import PlayerProfile from './components/PlayerProfile';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
 const router = createBrowserRouter([
@@ -66,6 +67,7 @@ const router = createBrowserRouter([
     element: <PlayerProtectedRoute />,
     children: [
       { path: 'dashboard', element: <PlayerDashboard /> },
+      { path: 'profile', element: <PlayerProfile /> },
       { path: 'history', element: <PlayerHistory /> },
       // The stats page can be shared or a player-specific one can be created.
       // For now, let's assume we can reuse the admin one in a read-only fashion for players.

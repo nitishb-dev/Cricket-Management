@@ -1,24 +1,51 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw } from 'lucide-react'
+import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw, Shield, Zap, GitCommit, GitMerge } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { useAuth } from '../context/AuthContext'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
 import { Navigation } from './Navigation'
+import { StatCard } from './StatCard'
 
-// const colorMap = {
-//   yellow: { from: 'from-yellow-400', to: 'to-yellow-500', text: 'text-yellow-100' },
-//   red: { from: 'from-red-400', to: 'to-red-500', text: 'text-red-100' },
-//   green: { from: 'from-green-400', to: 'to-green-500', text: 'text-green-100' },
-//   purple: { from: 'from-purple-400', to: 'to-purple-500', text: 'text-purple-100' }
-// } as const
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+interface DetailedPlayerStats {
+  player: { id: string; name: string };
+  batting: {
+    matches: number;
+    runs: number;
+    average: number;
+    fours: number;
+    sixes: number;
+  };
+  bowling: {
+    matches: number;
+    wickets: number;
+  };
+  fielding: {
+    catches: number;
+    stumpings: number;
+  };
+  general: {
+    manOfMatch: number;
+    wins: number;
+  };
+}
 
 export const PlayerStats: React.FC = () => {
   const { getAllPlayerStats, loading } = useCricket()
-  const { role } = useAuth()
+  const { role, userId } = useAuth()
+
+  // State for admin view (all players)
   const [playerStats, setPlayerStats] = useState<CricketPlayerStats[]>([])
   const [sortBy, setSortBy] = useState<'runs' | 'wickets' | 'matches' | 'wins' | 'mom'>('runs')
   const [loadingStats, setLoadingStats] = useState(false)
 
+  // State for player view (single player)
+  const [myStats, setMyStats] = useState<DetailedPlayerStats | null>(null);
+  const [myStatsLoading, setMyStatsLoading] = useState(true);
+  const [myStatsError, setMyStatsError] = useState<string | null>(null);
+
+  // Admin: Load all player stats
   const loadStats = useCallback(async () => {
     setLoadingStats(true)
     try {
@@ -36,6 +63,29 @@ export const PlayerStats: React.FC = () => {
     loadStats()
   }, [loadStats])
 
+  // Player: Load detailed stats for the logged-in user
+  useEffect(() => {
+    if (role !== 'player' || !userId) return;
+
+    const fetchMyStats = async () => {
+      setMyStatsLoading(true);
+      setMyStatsError(null);
+      try {
+        const res = await fetch(`${API_BASE_URL}/players/${userId}/detailed-stats`);
+        if (!res.ok) throw new Error('Failed to fetch your stats');
+        const data: DetailedPlayerStats = await res.json();
+        setMyStats(data);
+      } catch (err) {
+        setMyStatsError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setMyStatsLoading(false);
+      }
+    };
+
+    fetchMyStats();
+  }, [role, userId]);
+
+  // Admin: Memoized top performers
   const getTopPerformers = (key: keyof Omit<CricketPlayerStats, 'player'>) => {
     if (playerStats.length === 0) return []
     const maxValue = Math.max(...playerStats.map(p => (p[key] ?? 0)))
@@ -49,24 +99,101 @@ export const PlayerStats: React.FC = () => {
     mom: getTopPerformers('manOfMatchCount')
   }
 
+  // Player View
+  if (role === 'player') {
+    if (myStatsLoading) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Navigation activeView="stats" role="player" />
+          <div className="flex items-center justify-center pt-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (myStatsError || !myStats) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Navigation activeView="stats" role="player" />
+          <div className="p-8 text-center text-red-600">
+            <h2 className="text-xl font-bold">Error Loading Stats</h2>
+            <p>{myStatsError || 'Could not find your statistics.'}</p>
+          </div>
+        </div>
+      );
+    }
+
+    const { batting, bowling, general } = myStats;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation activeView="stats" role="player" />
+        <main className="pb-20">
+          <div className="page-container pt-7">
+            <div className="content-container max-w-4xl mx-auto space-y-8">
+              {/* Header */}
+              <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
+                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
+                  <User size={48} className="text-gray-400" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
+                  <p className="text-lg text-gray-600">Your Career Statistics</p>
+                </div>
+              </div>
+
+              {/* General Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
+                <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
+                <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
+              </div>
+
+              {/* Batting Stats */}
+              <div className="card p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
+                  <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
+                  <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
+                  <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
+                </div>
+              </div>
+
+              {/* Bowling Stats */}
+              <div className="card p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
+                  <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
+                  <StatCard label="Economy" value="N/A" icon={<Shield />} />
+                  <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Admin View (existing code)
   if (loading || loadingStats) {
     return (
-      <>
-        <Navigation activeView="stats" role={role || 'admin'} />
+      <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-600">Loading player statistics...</p>
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {role === 'player' && <Navigation activeView="stats" role="player" />}
-      <main className={role === 'player' ? "pb-0" : ""}>
+      <main>
         <div className="page-container w-full overflow-x-hidden pt-7">
           <div className="content-container space-y-8">
             {/* Header */}

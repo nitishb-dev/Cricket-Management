@@ -300,4 +300,114 @@ router.get("/:id/history", async (req, res, next) => {
   }
 });
 
+// GET route for a single player's profile details
+router.get("/:id/profile", async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    // 1. Get basic player info
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("id, name, username, created_at")
+      .eq("id", id)
+      .single();
+
+    if (playerError || !player) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    // 2. Get all stats entries for the player
+    const { data: stats, error: statsError } = await supabase
+      .from("match_player_stats")
+      .select("team, matches(match_date)")
+      .eq("player_id", id);
+
+    if (statsError) throw statsError;
+
+    // 3. Process the stats to find unique teams and first match date
+    const teams = [...new Set(stats.map((s) => s.team).filter(Boolean))];
+    const firstMatchDate =
+      stats.length > 0
+        ? stats.reduce((earliest, current) => {
+            const earliestDate = new Date(earliest.matches.match_date);
+            const currentDate = new Date(current.matches.match_date);
+            return currentDate < earliestDate ? current : earliest;
+          }).matches.match_date
+        : null;
+
+    res.json({
+      player,
+      career: {
+        teams,
+        firstMatchDate,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET route for a single player's DETAILED stats by ID
+router.get("/:id/detailed-stats", async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const { data: player, error } = await supabase
+      .from("players")
+      .select("id, name, match_player_stats(*, matches(winner, man_of_match))")
+      .eq("id", id)
+      .single();
+
+    if (error || !player) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const allStats = player.match_player_stats;
+
+    const batting = {
+      matches: [...new Set(allStats.map((s) => s.match_id))].length,
+      runs: allStats.reduce((sum, s) => sum + s.runs, 0),
+      balls: 0, // This would require storing balls_faced per player
+      average: 0,
+      strikeRate: 0,
+      fours: allStats.reduce((sum, s) => sum + s.fours, 0),
+      sixes: allStats.reduce((sum, s) => sum + s.sixes, 0),
+      // highestScore: Math.max(0, ...allStats.map(s => s.runs)), // This is highest score in a single match entry
+    };
+
+    const bowling = {
+      matches: batting.matches,
+      wickets: allStats.reduce((sum, s) => sum + s.wickets, 0),
+      runsConceded: 0, // This would require storing runs_conceded per bowler
+      economy: 0,
+      bestFigures: "0/0",
+    };
+
+    const fielding = {
+      catches: 0, // Not tracked
+      stumpings: 0, // Not tracked
+    };
+
+    const general = {
+      manOfMatch: allStats.filter(
+        (s) => s.matches && s.matches.man_of_match === player.name
+      ).length,
+      wins: allStats.filter((s) => s.matches && s.matches.winner === s.team)
+        .length,
+    };
+
+    // Calculate averages that depend on other stats
+    batting.average =
+      batting.matches > 0 ? +(batting.runs / batting.matches).toFixed(2) : 0;
+
+    res.json({
+      player: { id: player.id, name: player.name },
+      batting,
+      bowling,
+      fielding,
+      general,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
