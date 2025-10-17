@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  user: string | null;
   login: (user: string, pass: string) => boolean;
   logout: () => void;
 }
@@ -20,19 +21,30 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'password'; // In a real app, use environment variables!
+/**
+ * Read admin credentials from Vite environment variables.
+ * Vite prefixes public env vars with VITE_. Use .env.local to set them in development.
+ * Fallback values are provided so the app still works if env vars are not set.
+ */
+const ADMIN_USERNAME = (import.meta.env.VITE_ADMIN_USERNAME as string) ?? 'admin';
+const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string) ?? 'password';
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    // Check session storage on initial load
     return sessionStorage.getItem('isAuthenticated') === 'true';
   });
 
-  const login = (user: string, pass: string): boolean => {
-    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+  const [user, setUser] = useState<string | null>(() => {
+    return sessionStorage.getItem('authUser') || null;
+  });
+
+  const login = (userName: string, pass: string): boolean => {
+    // Compare against environment-driven credentials
+    if (userName === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
+      setUser(userName);
       sessionStorage.setItem('isAuthenticated', 'true');
+      sessionStorage.setItem('authUser', userName);
       return true;
     }
     return false;
@@ -40,14 +52,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setIsAuthenticated(false);
+    setUser(null);
     sessionStorage.removeItem('isAuthenticated');
+    sessionStorage.removeItem('authUser');
   };
 
-  // This effect will sync auth state across tabs
+  // Sync logout across tabs (keeps state consistent)
   useEffect(() => {
     const syncLogout = (event: StorageEvent) => {
       if (event.key === 'isAuthenticated' && event.newValue === null) {
         logout();
+      }
+      if (event.key === 'authUser' && event.newValue === null) {
+        setUser(null);
       }
     };
 
@@ -57,11 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const value = { isAuthenticated, login, logout };
+  const value = { isAuthenticated, user, login, logout };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

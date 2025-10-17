@@ -212,7 +212,7 @@ export const Dashboard: React.FC = () => {
                       <div className="text-center lg:text-right">
                         <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg shadow-md">
                           <Trophy size={14} />
-                          {match.winner} Won
+                          {match.winner}
                         </div>
                       </div>
                       <div className="text-center lg:text-right">
