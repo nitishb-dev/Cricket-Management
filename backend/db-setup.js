@@ -51,17 +51,41 @@ const SCHEMA_SQL = `
     sixes INT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
+
+  ALTER TABLE players
+    ADD COLUMN IF NOT EXISTS username TEXT,
+    ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+  -- add unique index on username (separate statement to avoid issues)
+  CREATE UNIQUE INDEX IF NOT EXISTS players_username_idx ON players(username);
 `;
 
 export const initializeDatabase = async () => {
   try {
+    if (!process.env.SUPABASE_DB_URL) {
+      console.warn(
+        "⚠️ SUPABASE_DB_URL is not set. Set it in backend/.env or export it in the shell."
+      );
+    } else {
+      console.log(
+        "Using SUPABASE_DB_URL:",
+        process.env.SUPABASE_DB_URL.split("?")[0]
+      );
+    }
+
     // Execute the schema SQL on the pool directly.
-    // The pool will manage the client connection for this query.
     await pool.query(SCHEMA_SQL);
     console.log("✅ Database tables initialized successfully.");
+    await pool.end();
   } catch (err) {
     console.error("❌ Error initializing database tables:", err);
     // Exit the process with an error code if the database can't be initialized.
     process.exit(1);
   }
 };
+
+/**
+ * Run the initializer when this script is executed directly.
+ * For ESM modules it's fine to call the function at top-level.
+ */
+initializeDatabase();

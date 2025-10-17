@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CricketProvider } from './context/CricketContext';
 import { AdminLogin } from './components/AdminLogin';
@@ -11,28 +11,79 @@ import { MatchSetup } from './components/MatchSetup';
 import { MatchPlay } from './components/MatchPlay';
 import { MatchHistory } from './components/MatchHistory';
 import { PlayerStats } from './components/PlayerStats';
+import { PlayerLogin } from './components/PlayerLogin';
+import LoginChoice from './components/LoginChoice';
+import PlayerDashboard from './components/PlayerDashboard';
+import PlayerHistory from './components/PlayerHistory';
+import PlayerProfile from './components/PlayerProfile';
+import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
+
+const router = createBrowserRouter([
+  // Public login choice and auth routes
+  {
+    path: '/',
+    element: <LoginChoice />,
+  },
+  {
+    path: '/admin-login',
+    element: <AdminLogin />,
+  },
+  {
+    path: '/player-login',
+    element: <PlayerLogin />,
+  },
+
+  // New protected admin area sits under /app/*
+  {
+    path: '/app',
+    element: <ProtectedRoute />, // only matches /app and its children
+    children: [
+      {
+        element: <MainLayout />,
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: 'dashboard', element: <Dashboard /> },
+          { path: 'players', element: <PlayerManagement /> },
+          { path: 'new-match', element: <MatchSetup /> },
+          { path: 'play-match', element: <MatchPlay /> },
+          { path: 'history', element: <MatchHistory /> },
+          { path: 'stats', element: <PlayerStats /> },
+        ],
+      },
+    ],
+  },
+
+  // Backwards-compatible redirects from legacy routes -> new /app/* routes
+  { path: '/dashboard', element: <Navigate to="/app/dashboard" replace /> },
+  { path: '/players', element: <Navigate to="/app/players" replace /> },
+  { path: '/new-match', element: <Navigate to="/app/new-match" replace /> },
+  { path: '/play-match', element: <Navigate to="/app/play-match" replace /> },
+  { path: '/history', element: <Navigate to="/app/history" replace /> },
+  { path: '/stats', element: <Navigate to="/app/stats" replace /> },
+
+  // Player protected area
+  {
+    path: '/player',
+    element: <PlayerProtectedRoute />,
+    children: [
+      { path: 'dashboard', element: <PlayerDashboard /> },
+      { path: 'profile', element: <PlayerProfile /> },
+      { path: 'history', element: <PlayerHistory /> },
+      // The stats page can be shared or a player-specific one can be created.
+      // For now, let's assume we can reuse the admin one in a read-only fashion for players.
+      { path: 'stats', element: <PlayerStats /> },
+    ],
+  },
+
+  // Fallback
+  { path: '*', element: <Navigate to="/" replace /> },
+]);
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <CricketProvider>
-        <Routes>
-          <Route path="/admin-login" element={<AdminLogin />} />
-          
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="players" element={<PlayerManagement />} />
-              <Route path="new-match" element={<MatchSetup />} />
-              <Route path="play-match" element={<MatchPlay />} />
-              <Route path="history" element={<MatchHistory />} />
-              <Route path="stats" element={<PlayerStats />} />
-            </Route>
-          </Route>
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <RouterProvider router={router} />
       </CricketProvider>
     </AuthProvider>
   );

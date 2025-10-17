@@ -1,181 +1,172 @@
-import React from 'react'
-import { Home, Users, Plus, History, BarChart3, Trophy, LogOut } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import React, { useState, useRef, useEffect } from 'react'
+import { LayoutDashboard, Users, PlusSquare, History, BarChart3, LogOut, User } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats'
-
-interface NavigationProps {
-  activeView: ActiveView
+const navConfig = {
+  dashboard: { icon: LayoutDashboard, label: 'Dashboard' },
+  players: { icon: Users, label: 'Players' },
+  'new-match': { icon: PlusSquare, label: 'New Match' },
+  'play-match': { icon: PlusSquare, label: 'Play Match' },
+  history: { icon: History, label: 'History' },
+  stats: { icon: BarChart3, label: 'Statistics' },
+  profile: { icon: User, label: 'Profile' },
+  logout: { icon: LogOut, label: 'Logout' }
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ activeView }) => {
-  const { logout } = useAuth()
-  const navItems = [
-    { id: 'dashboard' as ActiveView, path: '/dashboard', label: 'Dashboard', icon: Home },
-    { id: 'players' as ActiveView, path: '/players', label: 'Players', icon: Users },
-    { id: 'new-match' as ActiveView, path: '/new-match', label: 'New Match', icon: Plus },
-    { id: 'history' as ActiveView, path: '/history', label: 'History', icon: History },
-    { id: 'stats' as ActiveView, path: '/stats', label: 'Statistics', icon: BarChart3 },
-  ]
+interface NavigationProps {
+  activeView: ActiveView;
+  role?: 'admin' | 'player'
+}
+
+type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats' | 'profile'
+
+const adminNavItems: ActiveView[] = ['dashboard', 'players', 'new-match', 'history', 'stats']
+const playerNavItems: ActiveView[] = ['dashboard', 'history', 'stats']
+
+export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admin' }) => {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    // Bind the event listener
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [menuRef])
+
+  const handleLogout = () => {
+    setMenuOpen(false)
+    logout()
+  }
+
+  const navItems = (role === 'player' ? playerNavItems : adminNavItems).map(id => ({
+    id,
+    path: role === 'player' ? `/player/${id}` : `/app/${id}`,
+    ...navConfig[id]
+  }));
+
+  const initials = user ? user.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() : 'U'
 
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden lg:block bg-gradient-to-r from-green-700 via-green-600 to-green-700 shadow-2xl border-b-4 border-green-500">
+      <nav className="hidden lg:block bg-gradient-to-r from-green-700 via-green-600 to-green-700 shadow-lg border-b-2 border-green-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+          <div className="flex items-center justify-between h-16">
+            {/* Logo left */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/20 rounded-full blur-lg"></div>
-                <Trophy className="relative text-white" size={40} />
+                <LayoutDashboard className="relative text-white" size={32} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Cricket Manager
-                </h1>
-                <p className="text-green-100 text-sm">Manage your cricket league</p>
+                <h1 className="text-2xl font-bold text-white">Cricket Manager</h1>
               </div>
             </div>
 
             {/* Nav Items */}
-            <div className="flex space-x-2">
-              {navItems.map(item => {
-                const Icon = item.icon
-                const isActive = activeView === item.id
+            <div className="flex items-center space-x-4">
+              <div className="flex space-x-2">
+                {navItems.map(item => {
+                  const { icon: Icon } = item
+                  const isActive = activeView === item.id
 
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.path}
-                    aria-label={item.label}
-                    className={`group relative flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
-                      isActive
-                        ? 'bg-white text-green-700 shadow-lg'
-                        : 'text-green-100 hover:text-white hover:bg-green-600/50 backdrop-blur-sm'
-                    }`}
-                  >
-                    <Icon size={20} className={isActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
-                    <span className="hidden xl:block">{item.label}</span>
-                    {isActive && (
-                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-green-700 rounded-full"></div>
-                    )}
-                  </Link>
-                )
-              })}
-              <button
-                onClick={logout}
-                aria-label="Logout"
-                className="group relative flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 text-orange-100 hover:text-white hover:bg-orange-600/50 backdrop-blur-sm"
-              >
-                <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-                <span className="hidden xl:block">Logout</span>
-              </button>
+                  return (
+                    <NavLink
+                      key={item.id}
+                      to={item.path}
+                      aria-label={item.label}
+                      className={`group relative flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
+                        isActive
+                          ? 'bg-white text-green-700 shadow-lg'
+                          : 'text-green-100 hover:text-white hover:bg-green-600/50 backdrop-blur-sm'
+                      }`}
+                    >
+                      <Icon size={18} className={isActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+                      <span className="hidden xl:block">{item.label}</span>
+                    </NavLink>
+                  )
+                })}
+              </div>
+
+              {/* Profile dropdown */}
+              <div className="relative profile-menu-wrapper" ref={menuRef}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+                  aria-haspopup="true"
+                  aria-expanded={menuOpen}
+                >
+                  <div className="w-9 h-9 rounded-full bg-white text-green-700 font-bold flex items-center justify-center">
+                    {initials}
+                  </div>
+                  <span className="hidden md:inline text-white font-medium">{user ?? 'User'}</span>
+                </button>
+
+                {menuOpen && (role === 'admin' ? (
+                  // Admin Dropdown
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                     <button onClick={handleLogout} className="dropdown-item text-red-600 w-full">
+                      <LogOut size={16} /> Logout
+                    </button>
+                  </div>
+                ) : (
+                  // Player Dropdown
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                    <div className="px-4 py-3 border-b">
+                      <p className="text-sm">Signed in as</p>
+                      <p className="font-medium text-gray-900 truncate">{user}</p>
+                    </div>
+                    <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2"><User size={16} /> Profile</button>
+                    <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2"><LogOut size={16} /> Logout</button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Tablet Navigation */}
-      <nav className="hidden md:block lg:hidden bg-gradient-primary shadow-xl">
-        <div className="px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Compact Logo */}
-            <div className="flex items-center gap-3">
-              <Trophy className="text-white" size={28} />
-              <h1 className="text-xl font-bold text-white">Cricket Manager</h1>
-            </div>
-
-            {/* Compact Nav */}
-            <div className="flex space-x-1">
-              {navItems.map(item => {
-                const Icon = item.icon
-                const isActive = activeView === item.id
-
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.path}
-                    aria-label={item.label}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-white text-green-700 shadow-md'
-                        : 'text-green-100 hover:text-white hover:bg-green-600/50'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-sm">{item.label}</span>
-                  </Link>
-                )
-              })}
-              <button
-                onClick={logout}
-                aria-label="Logout"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 text-orange-100 hover:text-white hover:bg-orange-600/50"
-              >
-                <LogOut size={18} />
-                <span className="text-sm">Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Navigation */}
-      <nav className="md:hidden bg-gradient-primary shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-center px-4 py-4 border-b border-green-500">
-          <div className="flex items-center gap-3">
-            <Trophy className="text-white" size={24} />
-            <h1 className="text-lg font-bold text-white">Cricket Manager</h1>
-          </div>
-        </div>
-
-        {/* Bottom Tab Bar */}
-        <div className="flex bg-green-600/50 backdrop-blur-sm">
+      {/* Tablet, Mobile — same pattern as desktop; the nav uses same `navItems` list so player/admin variant is applied */}
+      {/* Mobile Bottom Tab Bar (fixed) - logout removed from bottom bar */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-green-600/60 backdrop-blur-sm border-t border-green-500"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
+      >
+        <div className="flex">
           {navItems.map(item => {
-            const Icon = item.icon
+            const { icon: Icon } = item
             const isActive = activeView === item.id
 
             return (
-              <Link
+              <NavLink
                 key={item.id}
                 to={item.path}
                 aria-label={item.label}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 ${
-                  isActive
-                    ? 'text-white bg-green-700/50'
-                    : 'text-green-100 hover:text-white active:bg-green-700/30'
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-2 transition-all duration-300 ${
+                  isActive ? 'text-white bg-green-700/50' : 'text-green-100 hover:text-white active:bg-green-700/30'
                 }`}
               >
                 <div className={`p-1 rounded-lg ${isActive ? 'bg-white/20' : ''}`}>
-                  <Icon size={20} className={isActive ? 'animate-pulse' : ''} />
+                  <Icon size={18} className={isActive ? 'animate-pulse' : ''} />
                 </div>
-                <span className="text-xs font-medium truncate w-full text-center">
-                  {item.label}
-                </span>
-                {isActive && (
-                  <div className="w-1 h-1 bg-white rounded-full mt-1"></div>
-                )}
-              </Link>
+                <span className="text-xs font-medium truncate w-full text-center">{item.label}</span>
+                {isActive && <div className="w-1 h-1 bg-white rounded-full mt-1"></div>}
+              </NavLink>
             )
           })}
-          <button
-            key="logout"
-            onClick={logout}
-            aria-label="Logout"
-            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 transition-all duration-300 text-orange-100 hover:text-white active:bg-orange-700/30"
-          >
-            <div className="p-1 rounded-lg">
-              <LogOut size={20} />
-            </div>
-            <span className="text-xs font-medium truncate w-full text-center">
-              Logout
-            </span>
-          </button>
         </div>
-      </nav>
+      </div>
     </>
   )
 }

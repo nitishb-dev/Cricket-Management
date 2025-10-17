@@ -290,7 +290,7 @@ export const MatchSetup: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container w-full overflow-x-hidden">
       <div className="content-container">
         <div className="card p-6 sm:p-8 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure the document and app root use full viewport width/height and avoid horizontal overflow */
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden; /* prevents accidental horizontal scroll on small screens */
+}
+
 /* Design System Variables */
 :root {
   /* Primary Colors - Cricket Green Theme */
@@ -105,12 +116,15 @@
 
   /* Page Container */
   .page-container {
-    @apply min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 p-4 sm:p-6;
+    /* Use full width, but keep responsive inner padding so content doesn't touch the edges */
+    @apply w-full min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 px-2 sm:px-4 md:px-6 lg:px-8;
   }
 
   /* Content Container */
   .content-container {
-    @apply max-w-7xl mx-auto;
+    /* Allow full width content (no max-width clamp). Keeps centered alignment via mx-auto.
+       If you want a max width at very large screens you can add e.g. max-w-[1400px] */
+    @apply w-full mx-auto px-0 sm:px-2 lg:px-4;
   }
 
   /* Section Header */

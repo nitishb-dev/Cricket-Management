@@ -1,57 +1,51 @@
 import React, { useState } from 'react';
-import { LogIn, Trophy, Eye, EyeOff } from 'lucide-react';
+import { LogIn, User, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export const AdminLogin: React.FC = () => {
+export const PlayerLogin: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
 
-  // Type-safe helper to detect Promise-like values without using `any`
-  function isPromise<T = unknown>(value: unknown): value is Promise<T> {
-    return !!value && typeof (value as { then?: unknown }).then === 'function';
-  }
+  const { loginPlayer } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError('');
+
+    if (!username || !password) {
+      setError('Please enter username and password.');
+      return;
+    }
+
+    if (!loginPlayer) {
+      setError('Login service unavailable.');
+      return;
+    }
+
     setIsLoading(true);
-
     try {
-      // treat login result as unknown (it could be boolean or Promise<boolean>)
-      const result = login(username, password) as unknown;
-
-      let success = false;
-
-      if (isPromise<boolean>(result)) {
-        // login returned a Promise<boolean>
-        success = await result;
-      } else {
-        // login returned a boolean synchronously (or something truthy/falsey)
-        success = Boolean(result);
-      }
-
+      const success = await loginPlayer(username.trim(), password);
       if (!success) {
         setError('Invalid username or password.');
         setIsLoading(false);
         return;
       }
 
-      // Brief delay so spinner is visible and navigation isn't jarring
+      // Small delay so spinner is visible and navigation isn't jarring
       setTimeout(() => {
         setIsLoading(false);
-        // NOTE: Admin app now lives under /app
-        navigate('/app/dashboard');
-      }, 400);
+        // Navigate to player dashboard (create this route if needed)
+        navigate('/player/dashboard');
+      }, 300);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
       setIsLoading(false);
+      console.error('Player login error:', err);
+      setError(err instanceof Error ? err.message : 'Login failed.');
     }
   };
 
@@ -60,20 +54,20 @@ export const AdminLogin: React.FC = () => {
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center bg-gradient-primary rounded-full p-4 mb-4">
-            <Trophy className="text-white" size={40} />
+            <User className="text-white" size={40} />
           </div>
           <h1 className="text-3xl font-bold text-gray-800">Cricket Manager</h1>
-          <p className="text-gray-600">Admin Login</p>
+          <p className="text-gray-600">Player Login</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleLogin} className="space-y-6" aria-busy={isLoading}>
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="player-username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
               <input
-                id="username"
+                id="player-username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -81,16 +75,18 @@ export const AdminLogin: React.FC = () => {
                 required
                 disabled={isLoading}
                 aria-disabled={isLoading}
+                autoComplete="username"
+                placeholder="player username"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="player-password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <div className="relative mt-1">
                 <input
-                  id="password"
+                  id="player-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -98,6 +94,8 @@ export const AdminLogin: React.FC = () => {
                   required
                   disabled={isLoading}
                   aria-disabled={isLoading}
+                  autoComplete="current-password"
+                  placeholder="password"
                 />
                 <button
                   type="button"
@@ -121,11 +119,11 @@ export const AdminLogin: React.FC = () => {
               {isLoading ? (
                 <>
                   <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                  <span>Logging in...</span>
+                  <span>Signing in...</span>
                 </>
               ) : (
                 <>
-                  <LogIn size={18} /> Login
+                  <LogIn size={18} /> Sign in
                 </>
               )}
             </button>

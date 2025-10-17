@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import playerRoutes from "./routes/players.js";
 import matchRoutes from "./routes/matches.js";
+import authRoutes from "./routes/auth.js";
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,9 @@ app.use(express.json());
 app.get("/api/health", (req, res) => {
   res.json({ status: "working!", timestamp: new Date() });
 });
+
+// mount auth routes so /api/player/login works
+app.use("/api", authRoutes);
 
 app.use("/api/players", playerRoutes);
 app.use("/api/matches", matchRoutes);

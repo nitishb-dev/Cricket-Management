@@ -119,7 +119,7 @@ export const MatchHistory: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container w-full overflow-x-hidden">
       <div className="content-container space-y-8">
         {/* Header */}
         <div className="card p-6 sm:p-8">

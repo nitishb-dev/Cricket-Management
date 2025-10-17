@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useContext,
@@ -10,14 +11,20 @@ import {
   Match,
   PlayerStats,
   MatchPlayerStats,
-  SaveMatchPayload, // <-- Import these two types
-  SaveMatchResponse, // <-- from your cricket.ts file
+  SaveMatchPayload,
+  SaveMatchResponse,
 } from '../types/cricket'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 if (!import.meta.env.VITE_API_URL) {
   console.warn("VITE_API_URL is not set in .env file. Defaulting to http://localhost:5000/api");
+}
+
+interface AddPlayerPayload {
+  name: string;
+  username?: string;
+  password?: string;
 }
 
 interface CricketContextType {
@@ -27,7 +34,8 @@ interface CricketContextType {
   error: string | null
 
   // Player operations
-  addPlayer: (name: string) => Promise<Player | null>
+  // Accept either a string (name) for backwards compatibility, or an object with username/password
+  addPlayer: (payload: string | AddPlayerPayload) => Promise<Player | null>
   updatePlayer: (id: string, name: string) => Promise<Player | null>
   deletePlayer: (id: string) => Promise<void>
   getPlayerStats: (playerId: string) => Promise<PlayerStats | null>
@@ -87,29 +95,46 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   }
 
   // ---- Player operations ----
-  const addPlayer = async (name: string): Promise<Player | null> => {
+  const addPlayer = async (payload: string | AddPlayerPayload): Promise<Player | null> => {
+    const body: AddPlayerPayload = typeof payload === 'string' ? { name: payload } : payload;
+
     try {
       const response = await fetch(`${API_BASE_URL}/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      })
+        body: JSON.stringify(body)
+      });
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add player')
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to create player');
       }
-      const data: Player = await response.json()
-      await refreshData()
-      return data
+
+      // The server can return either:
+      // 1) the created player object directly, e.g. { id, name, username, ... }
+      // 2) a wrapper { player: { ... }, generatedPassword: '...' }
+      const data = await response.json();
+
+      const createdPlayer: Player = data?.player ?? data;
+
+      // defensive check
+      if (!createdPlayer || !createdPlayer.name) {
+        throw new Error('Invalid player data from server');
+      }
+
+      // update local state
+      setPlayers(prev => [...prev, createdPlayer]);
+
+      // If needed, you can return both createdPlayer and generatedPassword (not changing callers now).
+      // Example: return { player: createdPlayer, generatedPassword: data?.generatedPassword ?? null }
+      return createdPlayer;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add player')
-      return null
+      setError(err instanceof Error ? err.message : 'Failed to create player');
+      return null;
     }
   }
 
   const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
-    // Find the player's old name from the current state before sending the update.
-    // This is crucial for finding and replacing the name in the matches list.
     const oldPlayer = players.find(p => p.id === id)
 
     try {
@@ -126,12 +151,10 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
       const updatedPlayer: Player = await response.json()
 
-      // 1. Update the players list with the new player data.
       setPlayers(prevPlayers =>
         prevPlayers.map(p => (p.id === id ? updatedPlayer : p))
       )
 
-      // 2. If the old player was found, iterate through the matches and patch the man_of_match field.
       if (oldPlayer) {
         setMatches(prevMatches =>
           prevMatches.map(m => {
@@ -212,41 +235,27 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   }
 
-  // const getPlayerStats = async (
-  //   playerId: string
-  // ): Promise<PlayerStats | null> => {
-  //   try {
-  //     const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`)
-  //     if (!response.ok) throw new Error('Failed to fetch player stats')
-  //     const data: PlayerStats = await response.json()
-  //     return data
-  //   } catch (err) {
-  //     setError(err instanceof Error ? err.message : 'Failed to fetch player stats')
-  //     return null
-  //   }
-  // }
   const getPlayerStats = async (
-  playerId: string
-): Promise<PlayerStats | null> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`);
-    
-    // Explicitly check for a 404 response
-    if (response.status === 404) {
-      setError(`Player with ID ${playerId} not found.`);
+    playerId: string
+  ): Promise<PlayerStats | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`);
+
+      if (response.status === 404) {
+        setError(`Player with ID ${playerId} not found.`);
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch player stats');
+      }
+      const data: PlayerStats = await response.json();
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch player stats');
       return null;
     }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch player stats');
-    }
-    const data: PlayerStats = await response.json();
-    return data;
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Failed to fetch player stats');
-    return null;
-  }
-};
+  };
 
   const getAllPlayerStats = async (): Promise<PlayerStats[]> => {
     try {
