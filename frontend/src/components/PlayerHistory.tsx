@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Navigation } from './Navigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -73,11 +72,9 @@ const PlayerHistory: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation activeView="history" role="player" />
-      <main className="pb-0">
-        <div className="page-container pt-7">
-          <div className="content-container">
+    <div className="min-h-screen">
+      <main className="pb-20 pt-7">
+        <div className="space-y-6">
             <div className="mb-4">
               <h1 className="text-2xl font-bold">Match History — {user}</h1>
               <p className="text-sm text-gray-600">Your last matches and performance</p>
@@ -111,7 +108,6 @@ const PlayerHistory: React.FC = () => {
                 })}
               </div>
             )}
-          </div>
         </div>
       </main>
     </div>

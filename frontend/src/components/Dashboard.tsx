@@ -76,9 +76,8 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="page-container w-full overflow-x-hidden">
-      <div className="content-container space-y-6">
-        {/* Hero Section */}
+    <div className="w-full overflow-x-hidden">
+      <div className="space-y-6">
         <div className="relative overflow-hidden bg-gradient-primary rounded-3xl shadow-2xl">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>

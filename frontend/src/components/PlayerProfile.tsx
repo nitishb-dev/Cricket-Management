@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Navigation } from './Navigation';
 import { User, Calendar, MapPin, Award, Shield, BarChart2, Hash } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -86,20 +85,16 @@ export const PlayerProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation activeView="profile" role="player" />
-        <div className="flex items-center justify-center pt-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation activeView="profile" role="player" />
-        <div className="p-8 text-center text-red-600">
+      <div className="min-h-screen">
+        <div className="p-8 text-center text-red-600 mt-8">
           <h2 className="text-xl font-bold">Error Loading Profile</h2>
           <p>{error || 'Could not find profile data.'}</p>
         </div>
@@ -110,11 +105,9 @@ export const PlayerProfile: React.FC = () => {
   const { player, career } = profile;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation activeView="profile" role="player" />
-      <main className="pb-20">
-        <div className="page-container pt-7">
-          <div className="content-container max-w-4xl mx-auto">
+    <div className="min-h-screen">
+      <main className="pb-20 pt-7">
+          <div className="max-w-4xl mx-auto space-y-6">
             {/* Player Header */}
             <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
               <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
@@ -127,7 +120,7 @@ export const PlayerProfile: React.FC = () => {
             </div>
 
             {/* Personal Information */}
-            <div className="card mt-6 p-6">
+            <div className="card p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">PERSONAL INFORMATION</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6">
                 <InfoCard title="Born" value={`${formatDate('1994-12-14')} (30 years)`} icon={Calendar} />
@@ -140,7 +133,7 @@ export const PlayerProfile: React.FC = () => {
             </div>
 
             {/* Career Information */}
-            <div className="card mt-6 p-6">
+            <div className="card p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">CAREER INFORMATION</h3>
               <div>
                 <InfoCard title="Teams" value={career.teams.length > 0 ? career.teams.join(', ') : 'No teams yet'} icon={Shield} />
@@ -148,7 +141,7 @@ export const PlayerProfile: React.FC = () => {
             </div>
 
             {/* Debut Information */}
-            <div className="card mt-6 p-6">
+            <div className="card p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">CAREER DEBUT</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DebutCard format="T20" date={career.firstMatchDate} venue="Sabina Park" />
@@ -158,7 +151,6 @@ export const PlayerProfile: React.FC = () => {
               </div>
             </div>
 
-          </div>
         </div>
       </main>
     </div>

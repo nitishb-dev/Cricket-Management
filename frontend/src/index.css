@@ -1,3 +1,5 @@
+/* stylelint-disable at-rule-no-unknown */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -112,19 +114,6 @@ html, body, #root {
 
   .bg-gradient-accent {
     @apply bg-gradient-to-r from-blue-600 to-blue-700;
-  }
-
-  /* Page Container */
-  .page-container {
-    /* Use full width, but keep responsive inner padding so content doesn't touch the edges */
-    @apply w-full min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 px-2 sm:px-4 md:px-6 lg:px-8;
-  }
-
-  /* Content Container */
-  .content-container {
-    /* Allow full width content (no max-width clamp). Keeps centered alignment via mx-auto.
-       If you want a max width at very large screens you can add e.g. max-w-[1400px] */
-    @apply w-full mx-auto px-0 sm:px-2 lg:px-4;
   }
 
   /* Section Header */

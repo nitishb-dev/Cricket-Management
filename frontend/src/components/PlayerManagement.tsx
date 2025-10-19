@@ -96,8 +96,8 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   const canSelectMore = !maxSelections || selectedPlayers.length < maxSelections
 
   return (
-    <div className="page-container w-full overflow-x-hidden">
-      <div className="content-container">
+    <div className="w-full overflow-x-hidden">
+      <div>
         <div className="card overflow-hidden">
           {/* Header Section */}
           <div className="section-header">

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Navigation } from './Navigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -138,19 +137,16 @@ export const PlayerDashboard: React.FC = () => {
   // Loading / error UI — still render Navigation (player role)
   if (loading) {
     return (
-      <>
-        <Navigation activeView="dashboard" role="player" />
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-gray-600">Loading your dashboard...</div>
-        </div>
-      </>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading your dashboard...</div>
+      </div>
     );
   }
 
+  // Note: The error state UI could also be improved to be more consistent.
   if (error) {
     return (
-      <>
-        <Navigation activeView="dashboard" role="player" />
+      <div className="min-h-screen">
         <div className="p-6">
           <div className="max-w-3xl mx-auto">
             <div className="bg-white p-6 rounded shadow">
@@ -167,16 +163,14 @@ export const PlayerDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-fit bg-gray-50">
-      <Navigation activeView="dashboard" role="player" />
-      <main className= "pb-0">
-        <div className="page-container pt-7">
-          <div className="content-container">
+    <div className="min-h-fit">
+      <main className= "pb-20 pt-7">
+        <div className="space-y-6">
             <div className="mb-6">
               <h1 className="text-4xl font-bold">Welcome back, {user}</h1>
               <p className="text-sm text-gray-600">Here's a quick summary of your recent performance.</p>
@@ -288,7 +282,6 @@ export const PlayerDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </main>
     </div>

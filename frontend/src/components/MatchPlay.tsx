@@ -360,8 +360,8 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
   }
 
   return (
-    <div className="page-container w-full overflow-x-hidden">
-      <div className="content-container space-y-8">
+    <div className="w-full overflow-x-hidden">
+      <div className="space-y-8">
         {/* Header */}
         <div className="card p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

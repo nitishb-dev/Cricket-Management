@@ -3,7 +3,6 @@ import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw, Shield, 
 import { useCricket } from '../context/CricketContext'
 import { useAuth } from '../context/AuthContext'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
-import { Navigation } from './Navigation'
 import { StatCard } from './StatCard'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -103,20 +102,16 @@ export const PlayerStats: React.FC = () => {
   if (role === 'player') {
     if (myStatsLoading) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <Navigation activeView="stats" role="player" />
-          <div className="flex items-center justify-center pt-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
-          </div>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
         </div>
       );
     }
 
     if (myStatsError || !myStats) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <Navigation activeView="stats" role="player" />
-          <div className="p-8 text-center text-red-600">
+        <div className="min-h-screen">
+          <div className="p-8 text-center text-red-600 mt-8">
             <h2 className="text-xl font-bold">Error Loading Stats</h2>
             <p>{myStatsError || 'Could not find your statistics.'}</p>
           </div>
@@ -126,11 +121,9 @@ export const PlayerStats: React.FC = () => {
 
     const { batting, bowling, general } = myStats;
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation activeView="stats" role="player" />
-        <main className="pb-20">
-          <div className="page-container pt-7">
-            <div className="content-container max-w-4xl mx-auto space-y-8">
+      <div className="min-h-screen">
+        <main className="pb-20 pt-7">
+            <div className="max-w-4xl mx-auto space-y-6">
               {/* Header */}
               <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
                 <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
@@ -171,7 +164,6 @@ export const PlayerStats: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
         </main>
       </div>
     );
@@ -180,8 +172,8 @@ export const PlayerStats: React.FC = () => {
   // Admin View (existing code)
   if (loading || loadingStats) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center min-h-96">
+      <div className="min-h-screen">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-600">Loading player statistics...</p>
@@ -192,10 +184,9 @@ export const PlayerStats: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <main>
-        <div className="page-container w-full overflow-x-hidden pt-7">
-          <div className="content-container space-y-8">
+        <div className="w-full overflow-x-hidden pt-7 space-y-8">
             {/* Header */}
             <div className="card p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -324,7 +315,6 @@ export const PlayerStats: React.FC = () => {
               </div>
             </>
           )}
-          </div>
         </div>
       </main>
     </div>
