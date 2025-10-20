@@ -27,6 +27,11 @@ interface AddPlayerPayload {
   password?: string;
 }
 
+interface AddPlayerResponse {
+  player: Player;
+  generatedPassword?: string;
+}
+
 interface CricketContextType {
   players: Player[]
   matches: Match[]
@@ -35,7 +40,7 @@ interface CricketContextType {
 
   // Player operations
   // Accept either a string (name) for backwards compatibility, or an object with username/password
-  addPlayer: (payload: string | AddPlayerPayload) => Promise<Player | null>
+  addPlayer: (payload: string | AddPlayerPayload) => Promise<AddPlayerResponse | null>
   updatePlayer: (id: string, name: string) => Promise<Player | null>
   deletePlayer: (id: string) => Promise<void>
   getPlayerStats: (playerId: string) => Promise<PlayerStats | null>
@@ -45,6 +50,7 @@ interface CricketContextType {
   saveMatch: (matchData: SaveMatchPayload) => Promise<SaveMatchResponse | null>
   getMatchPlayerStats: (matchId: string) => Promise<MatchPlayerStats[]>
   deleteMatch: (matchId: string) => Promise<void>
+  resetPlayerPassword: (id: string) => Promise<AddPlayerResponse | null>
 
   // Data refresh
   refreshData: () => Promise<void>
@@ -95,7 +101,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   }
 
   // ---- Player operations ----
-  const addPlayer = async (payload: string | AddPlayerPayload): Promise<Player | null> => {
+  const addPlayer = async (payload: string | AddPlayerPayload): Promise<AddPlayerResponse | null> => {
     const body: AddPlayerPayload = typeof payload === 'string' ? { name: payload } : payload;
 
     try {
@@ -110,12 +116,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
         throw new Error(errData?.error || 'Failed to create player');
       }
 
-      // The server can return either:
-      // 1) the created player object directly, e.g. { id, name, username, ... }
-      // 2) a wrapper { player: { ... }, generatedPassword: '...' }
-      const data = await response.json();
-
-      const createdPlayer: Player = data?.player ?? data;
+      const data: AddPlayerResponse = await response.json();
+      const createdPlayer: Player = data.player;
 
       // defensive check
       if (!createdPlayer || !createdPlayer.name) {
@@ -125,9 +127,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       // update local state
       setPlayers(prev => [...prev, createdPlayer]);
 
-      // If needed, you can return both createdPlayer and generatedPassword (not changing callers now).
-      // Example: return { player: createdPlayer, generatedPassword: data?.generatedPassword ?? null }
-      return createdPlayer;
+      // Return the full response which may include the generated password
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create player');
       return null;
@@ -135,8 +136,6 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   }
 
   const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
-    const oldPlayer = players.find(p => p.id === id)
-
     try {
       const response = await fetch(`${API_BASE_URL}/players/${id}`, {
         method: 'PUT',
@@ -151,20 +150,9 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
       const updatedPlayer: Player = await response.json()
 
-      setPlayers(prevPlayers =>
-        prevPlayers.map(p => (p.id === id ? updatedPlayer : p))
-      )
-
-      if (oldPlayer) {
-        setMatches(prevMatches =>
-          prevMatches.map(m => {
-            return m.man_of_match === oldPlayer.name
-              ? { ...m, man_of_match: updatedPlayer.name }
-              : m
-          })
-        )
-      }
-
+      // After a successful update, refresh all data to ensure consistency,
+      // especially for derived data like usernames and man_of_match references.
+      await refreshData();
       return updatedPlayer
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update player')
@@ -183,6 +171,25 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       setError(err instanceof Error ? err.message : 'Failed to delete player')
     }
   }
+
+  const resetPlayerPassword = async (id: string): Promise<AddPlayerResponse | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/${id}/reset-password`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to reset password');
+      }
+
+      const data: AddPlayerResponse = await response.json();
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset password');
+      return null;
+    }
+  };
 
   // ---- Match operations ----
   const saveMatch = async (
@@ -286,6 +293,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     saveMatch,
     getMatchPlayerStats,
     deleteMatch,
+    resetPlayerPassword,
     refreshData
   }
 

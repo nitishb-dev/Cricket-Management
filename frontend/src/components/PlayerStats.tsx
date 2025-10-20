@@ -121,50 +121,46 @@ export const PlayerStats: React.FC = () => {
 
     const { batting, bowling, general } = myStats;
     return (
-      <div className="min-h-screen">
-        <main className="pb-20 pt-7">
-            <div className="max-w-4xl mx-auto space-y-6">
-              {/* Header */}
-              <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User size={48} className="text-gray-400" />
-                </div>
-                <div className="text-center sm:text-left">
-                  <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
-                  <p className="text-lg text-gray-600">Your Career Statistics</p>
-                </div>
-              </div>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
+          <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
+            <User size={48} className="text-gray-400" />
+          </div>
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
+            <p className="text-lg text-gray-600">Your Career Statistics</p>
+          </div>
+        </div>
 
-              {/* General Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
-                <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
-                <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
-              </div>
+        {/* General Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
+          <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
+          <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
+        </div>
 
-              {/* Batting Stats */}
-              <div className="card p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
-                  <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
-                  <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
-                  <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
-                </div>
-              </div>
+        {/* Batting Stats */}
+        <div className="card p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
+            <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
+            <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
+            <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
+          </div>
+        </div>
 
-              {/* Bowling Stats */}
-              <div className="card p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
-                  <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
-                  <StatCard label="Economy" value="N/A" icon={<Shield />} />
-                  <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
-                </div>
-              </div>
-            </div>
-        </main>
+        {/* Bowling Stats */}
+        <div className="card p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
+            <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
+            <StatCard label="Economy" value="N/A" icon={<Shield />} />
+            <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -186,7 +182,7 @@ export const PlayerStats: React.FC = () => {
   return (
     <div className="min-h-screen">
       <main>
-        <div className="w-full overflow-x-hidden pt-7 space-y-8">
+        <div className="w-full overflow-x-hidden space-y-8">
             {/* Header */}
             <div className="card p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

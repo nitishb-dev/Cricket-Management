@@ -37,7 +37,13 @@ router.post("/", async (req, res, next) => {
 
   try {
     // Choose username: provided || name
-    const usernameToUse = username ?? name;
+    let usernameToUse = username ?? name;
+    // Sanitize the username to match the login and update logic
+    usernameToUse = usernameToUse
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ".")
+      .replace(/[^a-z0-9._-]/g, "");
 
     // Generate random password if not provided
     const rawPassword =
@@ -107,30 +113,22 @@ router.put("/:id", async (req, res, next) => {
     }
     const oldName = player.name;
 
+    // Generate a new username from the new name
+    const newUsername = newName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ".")
+      .replace(/[^a-z0-9._-]/g, "");
+
     // Update the player's name in the 'players' table
     const { data: updatedPlayer, error: updateError } = await supabase
       .from("players")
-      .update({ name: newName })
+      .update({ name: newName, username: newUsername })
       .eq("id", id)
       .select()
       .single();
 
     if (updateError) throw updateError;
-
-    // If the name has changed, update all occurrences in the 'matches' table
-    if (oldName !== newName) {
-      const { error: manOfMatchError } = await supabase
-        .from("matches")
-        .update({ man_of_match: newName })
-        .eq("man_of_match", oldName);
-
-      if (manOfMatchError) {
-        console.error(
-          "Failed to update man_of_match references:",
-          manOfMatchError
-        );
-      }
-    }
 
     res.json(updatedPlayer);
   } catch (err) {
@@ -200,7 +198,7 @@ router.delete("/:id", async (req, res, next) => {
 // Get all player stats
 router.get("/stats/all", async (req, res, next) => {
   try {
-    const { data: players, error: playersError } = await supabase
+    const { data: playersData, error: playersError } = await supabase
       .from("players")
       .select(
         "id, name, created_at, match_player_stats(*, matches(winner, man_of_match))"
@@ -208,7 +206,7 @@ router.get("/stats/all", async (req, res, next) => {
 
     if (playersError) throw playersError;
 
-    const stats = players.map((row) => ({
+    const stats = playersData.map((row) => ({
       player: { id: row.id, name: row.name, created_at: row.created_at },
       totalMatches: [...new Set(row.match_player_stats.map((s) => s.match_id))]
         .length,
@@ -227,7 +225,7 @@ router.get("/stats/all", async (req, res, next) => {
       ).length,
       manOfMatchCount: row.match_player_stats.filter(
         (s) => s.matches && s.matches.man_of_match === row.name
-      ).length,
+      ).length, // Reverted to use name
     }));
 
     res.json(stats);
@@ -260,11 +258,11 @@ router.get("/stats/:id", async (req, res, next) => {
         ...new Set(player.match_player_stats.map((s) => s.match_id)),
       ].length,
       totalWins: player.match_player_stats.filter(
-        (s) => s.matches && s.matches.winner === s.team
+        (s) => s.matches?.winner === s.team
       ).length,
       manOfMatchCount: player.match_player_stats.filter(
         (s) => s.matches && s.matches.man_of_match === player.name
-      ).length,
+      ).length, // Reverted to use name
     };
 
     res.json({
@@ -283,13 +281,19 @@ router.get("/stats/:id", async (req, res, next) => {
 // Get player match history
 router.get("/:id/history", async (req, res, next) => {
   const { id } = req.params;
+  const { limit } = req.query;
   try {
     // Fetch match_player_stats rows for the player and include match metadata using Supabase relationship
-    const { data, error } = await supabase
+    let query = supabase
       .from("match_player_stats")
       .select("*, matches(*)")
       .eq("player_id", id)
       .order("created_at", { ascending: false });
+
+    if (limit && !isNaN(parseInt(limit, 10))) {
+      query = query.limit(parseInt(limit, 10));
+    }
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -350,17 +354,17 @@ router.get("/:id/profile", async (req, res, next) => {
 router.get("/:id/detailed-stats", async (req, res, next) => {
   const { id } = req.params;
   try {
-    const { data: player, error } = await supabase
+    const { data: playerData, error } = await supabase
       .from("players")
       .select("id, name, match_player_stats(*, matches(winner, man_of_match))")
       .eq("id", id)
       .single();
 
-    if (error || !player) {
+    if (error || !playerData) {
       return res.status(404).json({ error: "Player not found" });
     }
 
-    const allStats = player.match_player_stats;
+    const allStats = playerData.match_player_stats;
 
     const batting = {
       matches: [...new Set(allStats.map((s) => s.match_id))].length,
@@ -388,8 +392,8 @@ router.get("/:id/detailed-stats", async (req, res, next) => {
 
     const general = {
       manOfMatch: allStats.filter(
-        (s) => s.matches && s.matches.man_of_match === player.name
-      ).length,
+        (s) => s.matches && s.matches.man_of_match === playerData.name
+      ).length, // Reverted to use name
       wins: allStats.filter((s) => s.matches && s.matches.winner === s.team)
         .length,
     };
@@ -399,7 +403,7 @@ router.get("/:id/detailed-stats", async (req, res, next) => {
       batting.matches > 0 ? +(batting.runs / batting.matches).toFixed(2) : 0;
 
     res.json({
-      player: { id: player.id, name: player.name },
+      player: { id: playerData.id, name: playerData.name },
       batting,
       bowling,
       fielding,

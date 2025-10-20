@@ -13,7 +13,7 @@ import { MatchHistory } from './components/MatchHistory';
 import { PlayerStats } from './components/PlayerStats';
 import { PlayerLogin } from './components/PlayerLogin';
 import LoginChoice from './components/LoginChoice';
-import PlayerDashboard from './components/PlayerDashboard';
+import PlayerDashboard from './components/PlayerDashboard'; // Keep this import
 import PlayerHistory from './components/PlayerHistory';
 import PlayerLayout from './PlayerLayout';
 import PlayerProfile from './components/PlayerProfile';

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
-import { User, Calendar, MapPin, Award, Shield, BarChart2, Hash } from 'lucide-react';
+import { User, Calendar, Shield, Hash } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -25,25 +24,15 @@ const formatDate = (d?: string | null) => {
   return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
-const InfoCard: React.FC<{ title: string; value: string; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
-  <div>
+const InfoCard: React.FC<{ title: string; value: string | React.ReactNode; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
+  <div className="bg-gray-50 p-4 rounded-xl border">
     <div className="text-sm text-gray-500 flex items-center gap-2"><Icon size={14} /> {title}</div>
-    <div className="font-semibold text-gray-800">{value}</div>
+    <div className="font-semibold text-gray-800 mt-1">{value}</div>
   </div>
 );
-
-const DebutCard: React.FC<{ format: string; date: string | null; venue: string }> = ({ format, date, venue }) => (
-  <div className="bg-gray-50 p-4 rounded-lg border">
-    <h4 className="font-bold text-gray-800 uppercase">{format}</h4>
-    <p className="text-sm text-gray-600"><strong>Debut:</strong> vs Opponent, {formatDate(date)}</p>
-    <p className="text-sm text-gray-600"><strong>Last Played:</strong> vs Opponent, {formatDate(date)}</p>
-    <p className="text-xs text-gray-500 mt-1">{venue}</p>
-  </div>
-);
-
 
 export const PlayerProfile: React.FC = () => {
-  const { role, userId, isAuthenticated } = useAuth();
+  const { role, userId } = useAuth();
   const [profile, setProfile] = useState<PlayerProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +68,6 @@ export const PlayerProfile: React.FC = () => {
     return () => { mounted = false; };
   }, [userId, role]);
 
-  if (!isAuthenticated || role !== 'player') {
-    return <Navigate to="/player-login" replace />;
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -105,54 +90,28 @@ export const PlayerProfile: React.FC = () => {
   const { player, career } = profile;
 
   return (
-    <div className="min-h-screen">
-      <main className="pb-20 pt-7">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* Player Header */}
-            <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-              <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
-                <User size={64} className="text-gray-400" />
-              </div>
-              <div className="text-center sm:text-left">
-                <h1 className="text-4xl font-bold text-gray-800">{player.name}</h1>
-                <p className="text-lg text-gray-600">India</p>
-              </div>
-            </div>
-
-            {/* Personal Information */}
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">PERSONAL INFORMATION</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6">
-                <InfoCard title="Born" value={`${formatDate('1994-12-14')} (30 years)`} icon={Calendar} />
-                <InfoCard title="Birth Place" value="Kanpur, Uttar Pradesh" icon={MapPin} />
-                <InfoCard title="Nickname" value={player.name.split(' ')[0]} icon={Hash} />
-                <InfoCard title="Role" value="Bowler" icon={Award} />
-                <InfoCard title="Batting Style" value="Left Handed Bat" icon={BarChart2} />
-                <InfoCard title="Bowling Style" value="Left-arm wrist-spin" icon={BarChart2} />
-              </div>
-            </div>
-
-            {/* Career Information */}
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">CAREER INFORMATION</h3>
-              <div>
-                <InfoCard title="Teams" value={career.teams.length > 0 ? career.teams.join(', ') : 'No teams yet'} icon={Shield} />
-              </div>
-            </div>
-
-            {/* Debut Information */}
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">CAREER DEBUT</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DebutCard format="T20" date={career.firstMatchDate} venue="Sabina Park" />
-                <DebutCard format="Test" date={career.firstMatchDate} venue="Himachal Pradesh Cricket Association Stadium" />
-                <DebutCard format="ODI" date={career.firstMatchDate} venue="Queen's Park Oval" />
-                <DebutCard format="IPL" date={career.firstMatchDate} venue="Eden Gardens" />
-              </div>
-            </div>
-
+    <div className="space-y-8">
+      {/* Player Header */}
+      <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
+        <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
+          <User size={64} className="text-gray-400" />
         </div>
-      </main>
+        <div className="text-center sm:text-left">
+          <h1 className="text-4xl font-bold text-gray-800">{player.name}</h1>
+          <p className="text-lg text-gray-600">Player Profile</p>
+        </div>
+      </div>
+
+      {/* Account Information */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Account Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InfoCard title="Username" value={player.username} icon={Hash} />
+          <InfoCard title="Player Since" value={formatDate(player.created_at)} icon={Calendar} />
+          <InfoCard title="Teams Played For" value={career.teams.length > 0 ? career.teams.join(', ') : 'No teams yet'} icon={Shield} />
+          <InfoCard title="First Match" value={formatDate(career.firstMatchDate)} icon={Calendar} />
+        </div>
+      </div>
     </div>
   );
 };

@@ -16,7 +16,9 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    username TEXT,
+    password_hash TEXT
   );
 
   CREATE TABLE IF NOT EXISTS matches (
@@ -32,6 +34,7 @@ const SCHEMA_SQL = `
     team_b_wickets INT DEFAULT 0,
     winner TEXT,
     man_of_match TEXT,
+    man_of_match_player_id UUID REFERENCES players(id) ON DELETE SET NULL,
     match_date DATE DEFAULT CURRENT_DATE,
     is_completed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
