@@ -15,10 +15,10 @@ import {
   SaveMatchResponse,
 } from '../types/cricket'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 if (!import.meta.env.VITE_API_URL) {
-  console.warn("VITE_API_URL is not set in .env file. Defaulting to http://localhost:5000/api");
+  console.warn("VITE_API_URL is not set in .env file. Defaulting to http://localhost:5000");
 }
 
 interface AddPlayerPayload {
@@ -81,8 +81,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     setError(null)
     try {
       const [playersResponse, matchesResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/players`),
-        fetch(`${API_BASE_URL}/matches`)
+        fetch(`${API_BASE_URL}/api/players`),
+        fetch(`${API_BASE_URL}/api/matches`)
       ]);
 
       if (!playersResponse.ok) throw new Error('Failed to fetch players');
@@ -105,7 +105,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     const body: AddPlayerPayload = typeof payload === 'string' ? { name: payload } : payload;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/players`, {
+      const response = await fetch(`${API_BASE_URL}/api/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -137,7 +137,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/players/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/players/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
@@ -162,7 +162,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const deletePlayer = async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/players/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/players/${id}`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete player')
@@ -174,7 +174,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const resetPlayerPassword = async (id: string): Promise<AddPlayerResponse | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/players/${id}/reset-password`, {
+      const response = await fetch(`${API_BASE_URL}/api/players/${id}/reset-password`, {
         method: 'POST',
       });
 
@@ -196,7 +196,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     matchData: SaveMatchPayload
   ): Promise<SaveMatchResponse | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/matches`, {
+      const response = await fetch(`${API_BASE_URL}/api/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(matchData)
@@ -218,7 +218,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const deleteMatch = async (matchId: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/matches/${matchId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete match')
@@ -232,7 +232,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     matchId: string
   ): Promise<MatchPlayerStats[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/matches/${matchId}/stats`)
+      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}/stats`)
       if (!response.ok) throw new Error('Failed to fetch player stats')
       const data: MatchPlayerStats[] = await response.json()
       return data
@@ -246,7 +246,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     playerId: string
   ): Promise<PlayerStats | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/players/stats/${playerId}`);
+      const response = await fetch(`${API_BASE_URL}/api/players/stats/${playerId}`);
 
       if (response.status === 404) {
         setError(`Player with ID ${playerId} not found.`);
@@ -266,7 +266,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const getAllPlayerStats = async (): Promise<PlayerStats[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/players/stats/all`)
+      const response = await fetch(`${API_BASE_URL}/api/players/stats/all`)
       if (!response.ok) throw new Error('Failed to fetch all player stats')
       const data: PlayerStats[] = await response.json()
       return data
