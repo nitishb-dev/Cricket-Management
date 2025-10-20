@@ -228,7 +228,6 @@ CREATE TABLE IF NOT EXISTS match_player_stats (
 - Check your database credentials in `backend/.env`
 - Verify the database `cricket_management` exists
 
-
 ## 🎉 Features Implemented
 
 - ✅ Player management (add, view, search)
