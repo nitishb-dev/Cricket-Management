@@ -6,7 +6,7 @@ This web application was built using a prompt-engineering-first approach:
 
 - 💡 Idea + Prompts refined using **ChatGPT**
 - 🔧 Initial code generation through **bolt.new**
-- 🧠 Final development and refinement using **Cursor AI, Google Gemini, ChatGPT**
+- 🧠 Final development and refinement using **Copilot, Google Gemini, ChatGPT**
 
 The project combines human creativity with AI-augmented development. All logic, decisions, and final code were reviewed and customized as needed.
 
