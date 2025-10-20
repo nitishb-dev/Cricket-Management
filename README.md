@@ -79,22 +79,23 @@ cd ..
 
 ### 2. Database Setup
 
-1. Create a MySQL database:
-
-```sql
-CREATE DATABASE cricket_management;
-```
-
-2. The database tables will be automatically created when you start the server.
+1.  Go to [supabase.com](https://supabase.com), create a new project.
+2.  Find your Project URL and `anon` public key in your project's API settings.
+3.  You will also need your database connection string (URI) from the database settings page.
+4.  The database tables will be automatically created by running the `npm run init-db` script in the backend.
 
 ### 3. Environment Configuration
 
-The setup script creates these environment files automatically:
+You will need to create `.env` files for both the frontend and backend.
 
-**Frontend (frontend/.env):**
+**Frontend (`frontend/.env`):**
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+# For local development
+VITE_API_URL=http://localhost:5000
+
+# For production (example)
+# VITE_API_URL=https://your-production-url.onrender.com
 ```
 
 **Backend (backend/.env):**
