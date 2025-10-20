@@ -13,8 +13,9 @@ import { MatchHistory } from './components/MatchHistory';
 import { PlayerStats } from './components/PlayerStats';
 import { PlayerLogin } from './components/PlayerLogin';
 import LoginChoice from './components/LoginChoice';
-import PlayerDashboard from './components/PlayerDashboard';
+import PlayerDashboard from './components/PlayerDashboard'; // Keep this import
 import PlayerHistory from './components/PlayerHistory';
+import PlayerLayout from './PlayerLayout';
 import PlayerProfile from './components/PlayerProfile';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
@@ -66,12 +67,15 @@ const router = createBrowserRouter([
     path: '/player',
     element: <PlayerProtectedRoute />,
     children: [
-      { path: 'dashboard', element: <PlayerDashboard /> },
-      { path: 'profile', element: <PlayerProfile /> },
-      { path: 'history', element: <PlayerHistory /> },
-      // The stats page can be shared or a player-specific one can be created.
-      // For now, let's assume we can reuse the admin one in a read-only fashion for players.
-      { path: 'stats', element: <PlayerStats /> },
+      {
+        element: <PlayerLayout />,
+        children: [
+          { path: 'dashboard', element: <PlayerDashboard /> },
+          { path: 'profile', element: <PlayerProfile /> },
+          { path: 'history', element: <PlayerHistory /> },
+          { path: 'stats', element: <PlayerStats /> },
+        ],
+      },
     ],
   },
 

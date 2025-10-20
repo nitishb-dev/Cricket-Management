@@ -56,7 +56,7 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-2 sm:px-4 lg:px-6">
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center bg-gradient-primary rounded-full p-4 mb-4">

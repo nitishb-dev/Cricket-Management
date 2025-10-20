@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
-import { Navigation } from './Navigation';
+import { BarChart3, Target, GitCommit, Trophy, Award, User, History, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dayjs from 'dayjs';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-type PlayerStatsResponse = {
+interface PlayerDashboardStats {
   player: { id: string; name: string };
   totalRuns: number;
   totalWickets: number;
@@ -14,18 +15,12 @@ type PlayerStatsResponse = {
   manOfMatchCount: number;
 };
 
-type MatchEntry = {
+type MatchHistoryEntry = {
   id: string;
   match_id: string;
   team: string | null;
   runs: number;
   wickets: number;
-  ones: number;
-  twos: number;
-  threes: number;
-  fours: number;
-  sixes: number;
-  created_at?: string;
   matches?: {
     id: string;
     team_a_name: string;
@@ -37,260 +32,180 @@ type MatchEntry = {
   };
 };
 
-const formatDate = (d?: string | null) => {
-  if (!d) return '';
-  const dt = new Date(d);
-  if (Number.isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString();
-};
+const StatHighlight: React.FC<{ label: string; value: string | number; icon: React.ReactNode; gradient: string }> = ({ label, value, icon, gradient }) => (
+  <div className={`p-4 rounded-xl text-center text-white ${gradient} shadow-lg`}>
+    <div className="text-3xl font-bold">{value}</div>
+    <div className="text-sm opacity-80 mt-1 flex items-center justify-center gap-2">{icon}{label}</div>
+  </div>
+);
 
-const isSameLocalDay = (a?: string | null, b?: Date) => {
-  if (!a) return false;
-  const ad = new Date(a);
-  if (Number.isNaN(ad.getTime())) return false;
-  const bd = b || new Date();
-  return (
-    ad.getFullYear() === bd.getFullYear() &&
-    ad.getMonth() === bd.getMonth() &&
-    ad.getDate() === bd.getDate()
-  );
-};
-
-export const PlayerDashboard: React.FC = () => {
-  const { role, userId, user, isAuthenticated } = useAuth();
-
-  const [stats, setStats] = useState<PlayerStatsResponse | null>(null);
-  const [history, setHistory] = useState<MatchEntry[]>([]);
+const PlayerDashboard: React.FC = () => {
+  const { role, userId, user } = useAuth();
+  const [stats, setStats] = useState<PlayerDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Data fetch effect — runs unconditionally
-  useEffect(() => {
+  const [history, setHistory] = useState<MatchHistoryEntry[]>([]);
+
+  const fetchData = useCallback(async () => {
     if (role !== 'player' || !userId) {
       setLoading(false);
       return;
     }
 
-    let mounted = true;
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [statsRes, historyRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/players/stats/${userId}`),
-          fetch(`${API_BASE_URL}/players/${userId}/history`)
-        ]);
+    setLoading(true);
+    setError(null);
+    try {
+      const [statsRes, historyRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/players/stats/${userId}`),
+        fetch(`${API_BASE_URL}/players/${userId}/history?limit=5`) // Fetch last 5 matches
+      ]);
 
-        if (!statsRes.ok) {
-          throw new Error('Failed to fetch player stats');
-        }
-        if (!historyRes.ok) {
-          throw new Error('Failed to fetch player history');
-        }
-
-        const statsJson: PlayerStatsResponse = await statsRes.json();
-        const historyJson: MatchEntry[] = await historyRes.json();
-
-        if (!mounted) return;
-        setStats(statsJson);
-        // sort descending by match date / created_at
-        const sorted = (historyJson || []).slice().sort((a, b) => {
-          const aDate = new Date(a.matches?.match_date || a.created_at || 0).getTime();
-          const bDate = new Date(b.matches?.match_date || b.created_at || 0).getTime();
-          return bDate - aDate;
-        });
-        setHistory(sorted);
-      } catch (err) {
-        if (mounted) setError(err instanceof Error ? err.message : 'Failed to load');
-      } finally {
-        if (mounted) setLoading(false);
+      if (!statsRes.ok) {
+        const errData = await statsRes.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to fetch stats');
       }
-    };
+      if (!historyRes.ok) {
+        const errData = await historyRes.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to fetch match history');
+      }
 
+      const statsData: PlayerDashboardStats = await statsRes.json();
+      const historyData: MatchHistoryEntry[] = await historyRes.json();
+
+      setStats(statsData);
+      setHistory(historyData);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, [role, userId]);
+
+  useEffect(() => {
     fetchData();
-    return () => {
-      mounted = false;
-    };
-  }, [userId, role]);
+  }, [fetchData]);
 
-  // Memos run unconditionally
-  const todayRuns = useMemo(() => {
-    const today = new Date();
-    return history.reduce((sum, entry) => {
-      const matchDate = entry.matches?.match_date || entry.created_at;
-      if (isSameLocalDay(matchDate, today)) {
-        return sum + (entry.runs || 0);
-      }
-      return sum;
-    }, 0);
-  }, [history]);
-
-  const runsPerMatch = useMemo(() => {
-    if (!stats || !stats.totalMatches) return 0;
-    return +(stats.totalRuns / Math.max(1, stats.totalMatches)).toFixed(2);
-  }, [stats]);
-
-  // Redirect if not an authenticated player. This is a fallback; PlayerProtectedRoute is the primary guard.
-  if (!isAuthenticated || role !== 'player') {
-    return <Navigate to="/" replace />;
-  }
-
-  // Loading / error UI — still render Navigation (player role)
   if (loading) {
     return (
-      <>
-        <Navigation activeView="dashboard" role="player" />
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-gray-600">Loading your dashboard...</div>
-        </div>
-      </>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Navigation activeView="dashboard" role="player" />
-        <div className="p-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white p-6 rounded shadow">
-              <h2 className="text-xl font-semibold mb-2">Error</h2>
-              <p className="text-red-600">{error}</p>
-              <div className="mt-4">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
+      <div className="p-8 text-center text-red-600 mt-8">
+        <h2 className="text-xl font-bold">Error Loading Dashboard</h2>
+        <p>{error}</p>
+      </div>
     );
   }
 
+  const chartData = history
+    .slice()
+    .reverse()
+    .map((h) => ({
+      name: dayjs(h.matches?.match_date).format('MMM DD'),
+      runs: h.runs,
+    }));
+
   return (
-    <div className="min-h-fit bg-gray-50">
-      <Navigation activeView="dashboard" role="player" />
-      <main className= "pb-0">
-        <div className="page-container pt-7">
-          <div className="content-container">
-            <div className="mb-6">
-              <h1 className="text-4xl font-bold">Welcome back, {user}</h1>
-              <p className="text-sm text-gray-600">Here's a quick summary of your recent performance.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <div className="col-span-1 sm:col-span-1 lg:col-span-2 p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Today's Runs</p>
-                <p className="text-3xl font-bold">{todayRuns}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Total Runs</p>
-                <p className="text-2xl font-bold">{stats?.totalRuns ?? '-'}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Total Wickets</p>
-                <p className="text-2xl font-bold">{stats?.totalWickets ?? '-'}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Matches Played</p>
-                <p className="text-2xl font-bold">{stats?.totalMatches ?? '-'}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Man of the Match</p>
-                <p className="text-2xl font-bold">{stats?.manOfMatchCount ?? 0}</p>
-              </div>
-
-              <div className="p-4 bg-white rounded shadow">
-                <p className="text-sm text-gray-500">Runs / Match</p>
-                <p className="text-2xl font-bold">{runsPerMatch}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white rounded shadow p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Recent Matches</h2>
-                  <span className="text-sm text-gray-500">Showing latest {Math.min(10, history.length)}</span>
-                </div>
-
-                {history.length === 0 ? (
-                  <div className="text-gray-500">No match history available yet.</div>
-                ) : (
-                  <div className="space-y-3">
-                    {history.slice(0, 10).map((h) => {
-                      const match = h.matches;
-                      const result = match?.winner ? (match.winner === h.team ? 'Won' : 'Lost') : 'N/A';
-                      const resultColor = result === 'Won' ? 'bg-green-100 text-green-800' : result === 'Lost' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
-                      return (
-                        <div key={h.id} className="p-3 border rounded flex items-center justify-between">
-                          <div>
-                            <div className="font-semibold">
-                              {match?.team_a_name} vs {match?.team_b_name}
-                            </div>
-                            <div className="text-sm text-gray-500">{formatDate(match?.match_date || h.created_at)}</div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              <span className="mr-3">Team: <span className="font-medium">{h.team ?? '-'}</span></span>
-                              <span>Runs: <span className="font-medium">{h.runs}</span></span>
-                            </div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className={`inline-flex items-center px-2 py-1 rounded ${resultColor} text-sm font-medium`}>
-                              {result}
-                            </div>
-                            <div className="text-sm text-gray-500 mt-2">
-                              {h.fours ?? 0}×4 · {h.sixes ?? 0}×6 · {h.wickets ?? 0} wkts
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded shadow p-4">
-                <h3 className="text-lg font-semibold mb-3">Quick Summary</h3>
-                <div className="text-sm text-gray-700 space-y-2">
-                  <div>
-                    <span className="text-gray-500">Total Wins: </span>
-                    <span className="font-medium">{stats?.totalWins ?? 0}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Man of the Match: </span>
-                    <span className="font-medium">{stats?.manOfMatchCount ?? 0}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Matches: </span>
-                    <span className="font-medium">{stats?.totalMatches ?? 0}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Average Runs / Match: </span>
-                    <span className="font-medium">{runsPerMatch}</span>
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={() => window.print()}
-                    className="w-full px-3 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Print Summary
-                  </button>
-                </div>
-              </div>
-            </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="card p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
+            <User size={40} className="text-gray-400" />
+          </div>
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-gray-800">Welcome, {user}!</h1>
+            <p className="text-lg text-gray-600">Here's your performance snapshot.</p>
           </div>
         </div>
-      </main>
+        <button onClick={fetchData} className="btn-secondary flex items-center gap-2" disabled={loading}>
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Career Stats */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Career Highlights</h3>
+        {stats ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <StatHighlight label="Matches" value={stats.totalMatches} icon={<BarChart3 size={16} />} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
+            <StatHighlight label="Runs" value={stats.totalRuns} icon={<Target size={16} />} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
+            <StatHighlight label="Wickets" value={stats.totalWickets} icon={<GitCommit size={16} />} gradient="bg-gradient-to-br from-red-500 to-pink-500" />
+            <StatHighlight label="Wins" value={stats.totalWins} icon={<Trophy size={16} />} gradient="bg-gradient-to-br from-green-500 to-green-600" />
+            <StatHighlight label="Man of Match" value={stats.manOfMatchCount} icon={<Award size={16} />} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
+          </div>
+        ) : (
+          <p className="text-gray-500">No career stats available yet.</p>
+        )}
+      </div>
+
+      {/* Recent Matches */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Form</h3>
+        {history.length > 0 ? (
+          <div className="space-y-6">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                    }}
+                  />
+                  <Bar dataKey="runs" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-4">
+              {history.map(h => {
+                const match = h.matches;
+                if (!match) return null;
+                const result = match.winner ? (match.winner === h.team ? 'Won' : 'Lost') : 'N/A';
+                const resultColor = result === 'Won' ? 'border-green-500 bg-green-50' : result === 'Lost' ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50';
+
+                return (
+                  <div key={h.id} className={`p-4 border-l-4 rounded-r-lg ${resultColor} flex flex-col sm:flex-row items-center justify-between gap-4`}>
+                    <div>
+                      <div className="font-semibold text-gray-800">{match.team_a_name} vs {match.team_b_name}</div>
+                      <div className="text-sm text-gray-500">{dayjs(match.match_date).format('MMM DD, YYYY')}</div>
+                    </div>
+                    <div className="flex items-center gap-4 text-center">
+                      <div>
+                        <div className="font-bold text-lg">{h.runs}</div>
+                        <div className="text-xs text-gray-500">Runs</div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-lg">{h.wickets}</div>
+                        <div className="text-xs text-gray-500">Wickets</div>
+                      </div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${result === 'Won' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{result}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <History size={32} className="mx-auto mb-2" />
+            <p>You haven't played any matches yet.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

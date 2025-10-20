@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { User, Plus, Search, AlertCircle, Trash2, Edit, Save, XCircle } from 'lucide-react'
+import { User, Plus, Search, AlertCircle, Trash2, Edit, Save, XCircle, KeyRound, Copy, Check } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { Player } from '../types/cricket'
 
@@ -21,7 +21,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   disabledPlayers = []
 }) => {
   // ✅ also bring deletePlayer and updatePlayer from context
-  const { players, addPlayer, deletePlayer, updatePlayer, loading } = useCricket()
+  const { players, addPlayer, deletePlayer, updatePlayer, resetPlayerPassword, loading } = useCricket()
 
   const [newPlayerName, setNewPlayerName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -32,6 +32,10 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
   const [editedName, setEditedName] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
+
+  // State for showing generated password
+  const [generatedPasswordInfo, setGeneratedPasswordInfo] = useState<{ player: Player; password?: string } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
 
   const handleAddPlayer = async (e: React.FormEvent) => {
@@ -49,9 +53,10 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
     setIsAddingPlayer(true)
     setError(null)
 
-    const player = await addPlayer(trimmedName)
-    if (player) {
+    const response = await addPlayer(trimmedName)
+    if (response) {
       setNewPlayerName('')
+      if (response.generatedPassword) setGeneratedPasswordInfo({ player: response.player, password: response.generatedPassword });
     }
 
     setIsAddingPlayer(false)
@@ -83,6 +88,27 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
     setIsUpdating(false)
   }
 
+  const handleResetPassword = async (playerId: string) => {
+    if (!window.confirm('Are you sure you want to reset this player\'s password? A new password will be generated.')) {
+      return;
+    }
+    const response = await resetPlayerPassword(playerId);
+    if (response && response.generatedPassword) {
+      setGeneratedPasswordInfo({ player: response.player, password: response.generatedPassword });
+    }
+  };
+
+  const handleCopyPassword = () => {
+    if (generatedPasswordInfo?.password) {
+      navigator.clipboard.writeText(generatedPasswordInfo.password);
+      setIsCopied(true);
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000); // Reset after 2 seconds
+    }
+  };
+
+
   const filteredPlayers = players.filter(player =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -96,8 +122,45 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
   const canSelectMore = !maxSelections || selectedPlayers.length < maxSelections
 
   return (
-    <div className="page-container w-full overflow-x-hidden">
-      <div className="content-container">
+    <div className="w-full overflow-x-hidden">
+      {generatedPasswordInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md w-full text-center">
+            <KeyRound size={48} className="mx-auto text-green-500 mb-4" />
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+              Password for {generatedPasswordInfo.player.name}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Please copy this password and share it with the player. This is the only time it will be shown.
+            </p>
+            <div className="relative bg-gray-100 p-4 rounded-xl mb-6">
+              <p className="text-lg font-mono font-bold text-gray-800 tracking-widest">
+                {generatedPasswordInfo.password}
+              </p>
+              <button
+                onClick={handleCopyPassword}
+                className="absolute top-2 right-2 p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-all"
+                aria-label="Copy password"
+              >
+                {isCopied ? (
+                  <div className="flex items-center gap-1 text-green-600">
+                    <Check size={16} /> <span className="text-xs font-semibold">Copied</span>
+                  </div>
+                ) : (
+                  <Copy size={16} />
+                )}
+              </button>
+            </div>
+            <button
+              onClick={() => setGeneratedPasswordInfo(null)}
+              className="btn-primary w-full"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      <div>
         <div className="card overflow-hidden">
           {/* Header Section */}
           <div className="section-header">
@@ -200,7 +263,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
             </div>
 
             {/* Player List */}
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 pt-2">
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
@@ -342,6 +405,18 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                               aria-label={`Delete ${player.name}`}
                             >
                               <Trash2 size={16} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleResetPassword(player.id);
+                              }}
+                              className="p-2 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-colors opacity-0 group-hover:opacity-100"
+                              aria-label={`Reset password for ${player.name}`}
+                            >
+                              <KeyRound size={16} />
                             </button>
 
                             <div

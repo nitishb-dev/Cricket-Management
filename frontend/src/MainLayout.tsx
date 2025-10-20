@@ -48,21 +48,22 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navigation activeView={activeView} />
-      {/* Add bottom padding to avoid content being hidden under mobile nav;
-          add small top padding so sticky headers don't overlap content */}
-      <main className="pt-4 pb-20">
-        <Outlet context={{ 
-          onStartMatch: handleStartMatch,
-          onMatchComplete: handleMatchComplete,
-          // onCancelMatch is now the same as onCancelSetup
-          onCancelMatch: handleCancelSetup,
-          onRematch: handleRematch,
-          onCancelSetup: handleCancelSetup,
-          // Pass the current match data through context
-          currentMatch,
-        }} />
+      {/* Add bottom padding for mobile nav. Top padding is handled by the sticky header. */}
+      <main className="py-4 pb-24 px-2 sm:px-4 lg:px-6">
+        <div>
+          <Outlet context={{ 
+            onStartMatch: handleStartMatch,
+            onMatchComplete: handleMatchComplete,
+            // onCancelMatch is now the same as onCancelSetup
+            onCancelMatch: handleCancelSetup,
+            onRematch: handleRematch,
+            onCancelSetup: handleCancelSetup,
+            // Pass the current match data through context
+            currentMatch,
+          }} />
+        </div>
       </main>
     </div>
   );

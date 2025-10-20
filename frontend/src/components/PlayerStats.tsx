@@ -3,7 +3,6 @@ import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw, Shield, 
 import { useCricket } from '../context/CricketContext'
 import { useAuth } from '../context/AuthContext'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
-import { Navigation } from './Navigation'
 import { StatCard } from './StatCard'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -103,20 +102,16 @@ export const PlayerStats: React.FC = () => {
   if (role === 'player') {
     if (myStatsLoading) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <Navigation activeView="stats" role="player" />
-          <div className="flex items-center justify-center pt-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
-          </div>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
         </div>
       );
     }
 
     if (myStatsError || !myStats) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <Navigation activeView="stats" role="player" />
-          <div className="p-8 text-center text-red-600">
+        <div className="min-h-screen">
+          <div className="p-8 text-center text-red-600 mt-8">
             <h2 className="text-xl font-bold">Error Loading Stats</h2>
             <p>{myStatsError || 'Could not find your statistics.'}</p>
           </div>
@@ -126,53 +121,46 @@ export const PlayerStats: React.FC = () => {
 
     const { batting, bowling, general } = myStats;
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation activeView="stats" role="player" />
-        <main className="pb-20">
-          <div className="page-container pt-7">
-            <div className="content-container max-w-4xl mx-auto space-y-8">
-              {/* Header */}
-              <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User size={48} className="text-gray-400" />
-                </div>
-                <div className="text-center sm:text-left">
-                  <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
-                  <p className="text-lg text-gray-600">Your Career Statistics</p>
-                </div>
-              </div>
-
-              {/* General Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
-                <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
-                <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
-              </div>
-
-              {/* Batting Stats */}
-              <div className="card p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
-                  <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
-                  <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
-                  <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
-                </div>
-              </div>
-
-              {/* Bowling Stats */}
-              <div className="card p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
-                  <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
-                  <StatCard label="Economy" value="N/A" icon={<Shield />} />
-                  <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
-                </div>
-              </div>
-            </div>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
+          <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
+            <User size={48} className="text-gray-400" />
           </div>
-        </main>
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
+            <p className="text-lg text-gray-600">Your Career Statistics</p>
+          </div>
+        </div>
+
+        {/* General Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
+          <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
+          <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
+        </div>
+
+        {/* Batting Stats */}
+        <div className="card p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
+            <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
+            <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
+            <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
+          </div>
+        </div>
+
+        {/* Bowling Stats */}
+        <div className="card p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
+            <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
+            <StatCard label="Economy" value="N/A" icon={<Shield />} />
+            <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -180,8 +168,8 @@ export const PlayerStats: React.FC = () => {
   // Admin View (existing code)
   if (loading || loadingStats) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center min-h-96">
+      <div className="min-h-screen">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-600">Loading player statistics...</p>
@@ -192,10 +180,9 @@ export const PlayerStats: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <main>
-        <div className="page-container w-full overflow-x-hidden pt-7">
-          <div className="content-container space-y-8">
+        <div className="w-full overflow-x-hidden space-y-8">
             {/* Header */}
             <div className="card p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -324,7 +311,6 @@ export const PlayerStats: React.FC = () => {
               </div>
             </>
           )}
-          </div>
         </div>
       </main>
     </div>

@@ -14,14 +14,14 @@ router.post("/player/login", async (req, res) => {
     return res.status(400).json({ error: "username and password required" });
 
   try {
-    // normalize username for lookup
-    const normalized = String(username).trim().toLowerCase();
+    // Normalize username for lookup, making it case-insensitive
+    const normalizedUsername = String(username).trim().toLowerCase();
 
-    // Query Supabase for the player by username (case-sensitive exact match)
+    // Query Supabase for the player by username, using ilike for case-insensitive matching
     const { data: player, error } = await supabase
       .from("players")
       .select("id, name, username, password_hash")
-      .eq("username", normalized)
+      .ilike("username", normalizedUsername) // Use ilike for case-insensitive search
       .single();
 
     if (error || !player) {

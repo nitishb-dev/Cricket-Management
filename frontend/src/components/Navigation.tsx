@@ -46,7 +46,13 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
 
   const handleLogout = () => {
     setMenuOpen(false)
+    const currentRole = role;
     logout()
+    // After logging out, redirect to the appropriate login page
+    if (currentRole === 'admin') {
+      navigate('/admin-login');
+    }
+    // Player logout will be handled by the PlayerProtectedRoute redirecting to /player-login
   }
 
   const navItems = (role === 'player' ? playerNavItems : adminNavItems).map(id => ({
@@ -59,9 +65,55 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
 
   return (
     <>
+      {/* Mobile Top Header */}
+      <header className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-gray-200">
+        <div className="mx-auto px-2 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo/Title on left */}
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="text-green-600" size={24} />
+              <h1 className="text-lg font-bold text-gray-800">Cricket Manager</h1>
+            </div>
+
+            {/* Profile dropdown on right */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(v => !v)}
+                className="w-10 h-10 rounded-full bg-gradient-primary text-white font-bold flex items-center justify-center"
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+              >
+                {initials}
+              </button>
+
+              {menuOpen && (role === 'admin' ? (
+                // Admin Dropdown
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                  <div className="px-4 py-3 border-b">
+                    <p className="text-sm text-gray-500">Signed in as Admin</p>
+                    <p className="font-medium text-gray-900 truncate">{user}</p>
+                  </div>
+                  <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
+                </div>
+              ) : (
+                // Player Dropdown
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                  <div className="px-4 py-3 border-b">
+                    <p className="text-sm">Signed in as</p>
+                    <p className="font-medium text-gray-900 truncate">{user}</p>
+                  </div>
+                  <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2 px-4"><User size={16} /> Profile</button>
+                  <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Desktop Navigation */}
       <nav className="hidden lg:block bg-gradient-to-r from-green-700 via-green-600 to-green-700 shadow-lg border-b-2 border-green-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo left */}
             <div className="flex items-center gap-4">
@@ -115,9 +167,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
 
                 {menuOpen && (role === 'admin' ? (
                   // Admin Dropdown
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                     <button onClick={handleLogout} className="dropdown-item text-red-600 w-full">
-                      <LogOut size={16} /> Logout
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                    <div className="px-4 py-3 border-b">
+                      <p className="text-sm text-gray-500">Signed in as Admin</p>
+                      <p className="font-medium text-gray-900 truncate">{user}</p>
+                    </div>
+                    <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4">
+                      <LogOut size={16} />
+                      Logout
                     </button>
                   </div>
                 ) : (
@@ -127,8 +184,8 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                       <p className="text-sm">Signed in as</p>
                       <p className="font-medium text-gray-900 truncate">{user}</p>
                     </div>
-                    <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2"><User size={16} /> Profile</button>
-                    <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2"><LogOut size={16} /> Logout</button>
+                    <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2 px-4"><User size={16} /> Profile</button>
+                    <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
                   </div>
                 ))}
               </div>
@@ -140,7 +197,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
       {/* Tablet, Mobile — same pattern as desktop; the nav uses same `navItems` list so player/admin variant is applied */}
       {/* Mobile Bottom Tab Bar (fixed) - logout removed from bottom bar */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-green-600/60 backdrop-blur-sm border-t border-green-500"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-green-600/60 backdrop-blur-sm border-t border-green-500"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
       >
         <div className="flex">

@@ -1,3 +1,5 @@
+/* stylelint-disable at-rule-no-unknown */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,19 +116,6 @@ html, body, #root {
     @apply bg-gradient-to-r from-blue-600 to-blue-700;
   }
 
-  /* Page Container */
-  .page-container {
-    /* Use full width, but keep responsive inner padding so content doesn't touch the edges */
-    @apply w-full min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 px-2 sm:px-4 md:px-6 lg:px-8;
-  }
-
-  /* Content Container */
-  .content-container {
-    /* Allow full width content (no max-width clamp). Keeps centered alignment via mx-auto.
-       If you want a max width at very large screens you can add e.g. max-w-[1400px] */
-    @apply w-full mx-auto px-0 sm:px-2 lg:px-4;
-  }
-
   /* Section Header */
   .section-header {
     @apply bg-gradient-primary text-white p-6 sm:p-8 rounded-t-3xl;
@@ -202,4 +191,24 @@ html, body, #root {
 /* Focus styles for accessibility */
 .focus-visible {
   @apply outline-none ring-4 ring-green-500/30 ring-offset-2;
+}
+
+/* Custom Scrollbar Styles */
+/* For Webkit-based browsers (Chrome, Safari, Edge, etc.) */
+::-webkit-scrollbar {
+  width: 8px; /* Width of the vertical scrollbar */
+  height: 8px; /* Height of the horizontal scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* The track (the area the thumb moves along) */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* Color of the scroll thumb */
+  border-radius: 20px; /* Roundness of the scroll thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* Color of the thumb on hover */
 }
