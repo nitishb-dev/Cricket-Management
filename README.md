@@ -36,17 +36,20 @@ CricketManagementApp/
 ├── frontend/              # 🎨 React Frontend Application
 │   ├── src/               # Source code
 │   │   ├── components/    # React components
-│   │   ├── context/       # State management
-│   │   ├── lib/           # Utilities
+│   │   ├── context/       # React Context for state
 │   │   ├── types/         # TypeScript types
-│   │   └── App.tsx        # Main app component
+│   │   ├── App.tsx        # Main app component
+│   │   └── main.tsx       # App entry point
 │   ├── package.json       # Frontend dependencies
 │   └── vite.config.ts     # Vite configuration
 │
 ├── backend/               # ⚙️ Node.js Backend Server
-│   ├── index.js           # Main server file
+│   ├── routes/            # API routes (players, matches)
+│   ├── db.js              # Supabase client setup
+│   ├── db-setup.js        # Database schema initialization
+│   ├── index.js           # Express server entry point
 │   ├── package.json       # Backend dependencies
-│   └── .env               # Backend environment
+│   └── .env.example       # Environment variable example
 │
 ├── package.json           # 🎯 Root package.json (manages both)
 └── README.md              # 📖 This file
@@ -140,6 +143,7 @@ npm run preview          # Preview production build
 
 ```bash
 npm run dev              # Start development server
+npm run db:setup         # Initialize database schema
 npm start                # Start production server
 ```
 
