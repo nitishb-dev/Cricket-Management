@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { usePlayerApi } from './usePlayerApi';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -69,8 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return sessionStorage.getItem('playerToken') || null;
   });
 
-  const { apiFetch } = usePlayerApi();
-
   const login = (userName: string, pass: string): boolean => {
     // Compare against environment-driven credentials
     if (userName === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
@@ -102,37 +99,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem('authUserId');
   };
 
-  const loginPlayer = useCallback(
-    async (username: string, pass: string): Promise<boolean> => {
-      if (!API_BASE_URL) {
-        console.warn('API_BASE_URL not configured; player login unavailable');
+  const loginPlayer = async (username: string, pass: string): Promise<boolean> => {
+    if (!API_BASE_URL) {
+      console.warn('API_BASE_URL not configured; player login unavailable');
+      return false;
+    }
+
+    const normalizedUsername = sanitizeUsername(username);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/player/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: normalizedUsername, password: pass })
+      });
+
+      if (!res.ok) {
+        console.warn(`[auth] player login failed: status=${res.status}`);
         return false;
       }
 
-      const normalizedUsername = sanitizeUsername(username);
+      const data = await res.json();
 
-      try {
-        const data = await apiFetch<{ token: string; user: { id: string; name: string; username: string } }>('/player/login', {
-          method: 'POST',
-          body: JSON.stringify({ username: normalizedUsername, password: pass }),
-        });
-
-        // expected: { token, user: { id, name, username } }
-        sessionStorage.setItem('playerToken', data.token);
-        sessionStorage.setItem('authUser', data.user.name);
-        sessionStorage.setItem('authRole', 'player');
-        sessionStorage.setItem('authUserId', data.user.id);
-        setIsAuthenticated(true);
-        setUser(data.user.name);
-        setRole('player');
-        setUserId(data.user.id);
-        setToken(data.token);
-        return true;
-      } catch (err) {
-        console.error('player login error', err);
-        return false;
-      }
-    }, [apiFetch]);
+      // expected: { token, user: { id, name, username } }
+      sessionStorage.setItem('playerToken', data.token);
+      sessionStorage.setItem('authUser', data.user.name);
+      sessionStorage.setItem('authRole', 'player');
+      sessionStorage.setItem('authUserId', data.user.id);
+      setIsAuthenticated(true);
+      setUser(data.user.name);
+      setRole('player');
+      setUserId(data.user.id);
+      setToken(data.token);
+      return true;
+    } catch (err) {
+      console.error('player login error', err);
+      return false;
+    }
+  };
 
   // Sync logout across tabs (keeps state consistent)
   useEffect(() => {
