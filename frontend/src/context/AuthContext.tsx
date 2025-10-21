@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -69,8 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return sessionStorage.getItem('playerToken') || null;
   });
 
-  const navigate = useNavigate()
-
   const login = (userName: string, pass: string): boolean => {
     // Compare against environment-driven credentials
     if (userName === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
@@ -100,8 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem('authRole');
     sessionStorage.removeItem('playerToken');
     sessionStorage.removeItem('authUserId');
-    navigate('/admin-login');
-  }, [navigate]);
+  }, []);
 
   const loginPlayer = async (username: string, pass: string): Promise<boolean> => {
     if (!API_BASE_URL) {

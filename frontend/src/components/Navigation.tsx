@@ -45,16 +45,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
   }, [menuRef])
 
   const handleLogout = () => {
-    setMenuOpen(false)
-    logout()
-    // After logging out, redirect to the appropriate login page
-    if (role === 'admin') {
-      navigate('/admin-login');
-    }
-  }
-  const handlePlayerLogout = () => {
     setMenuOpen(false);
     logout();
+    if (role === 'admin') {
+      navigate('/admin-login');
+    } // Player logout is handled by PlayerProtectedRoute
   }
 
   const navItems = (role === 'player' ? playerNavItems : adminNavItems).map(id => ({
@@ -104,9 +99,8 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                     <p className="text-sm">Signed in as</p>
                     <p className="font-medium text-gray-900 truncate">{user}</p>
                   </div>
-                  <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2 px-4"><User size={16} /> Profile</button>                  
-                  <button onClick={handlePlayerLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
-                  <button onClick={handlePlayerLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
+                  <button onClick={() => { navigate('/player/profile'); setMenuOpen(false); }} className="dropdown-item w-full flex items-center gap-2 px-4"><User size={16} /> Profile</button>
+                  <button onClick={handleLogout} className="dropdown-item text-red-600 w-full flex items-center gap-2 px-4"><LogOut size={16} /> Logout</button>
                 </div>
               ))}
             </div>
