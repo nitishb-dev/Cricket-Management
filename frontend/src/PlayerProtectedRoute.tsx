@@ -11,5 +11,5 @@ export const PlayerProtectedRoute: React.FC = () => {
     return <Navigate to="/player-login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  return <Outlet />; // This was correct, just confirming it's here.
 };

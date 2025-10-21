@@ -52,7 +52,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            element: <MainLayout />,
+            element: <MainLayout />, // MainLayout now becomes a direct child
             children: [
               { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <Dashboard /> },
@@ -61,7 +61,7 @@ const router = createBrowserRouter([
               { path: 'play-match', element: <MatchPlay /> },
               { path: 'history', element: <MatchHistory /> },
               { path: 'stats', element: <PlayerStats /> },
-            ],
+            ]
           },
         ],
       },
@@ -70,13 +70,14 @@ const router = createBrowserRouter([
         element: <PlayerProtectedRoute />,
         children: [
           {
-            element: <PlayerLayout />,
+            element: <PlayerLayout />, // PlayerLayout now becomes a direct child
             children: [
+              { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <PlayerDashboard /> },
               { path: 'profile', element: <PlayerProfile /> },
               { path: 'history', element: <PlayerHistory /> },
               { path: 'stats', element: <PlayerStats /> },
-            ],
+            ]
           },
         ],
       },
