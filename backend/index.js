@@ -24,6 +24,10 @@ const corsOptions = {
     if (allowedOrigins.includes("*")) {
       return callback(null, true);
     }
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
     // For production, check against the whitelist
     if (origin && allowedOrigins.includes(origin.replace(/\/$/, ""))) {
       callback(null, true);
