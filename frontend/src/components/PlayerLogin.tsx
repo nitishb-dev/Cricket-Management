@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, User, Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const PlayerLogin: React.FC = () => {
@@ -12,6 +12,10 @@ export const PlayerLogin: React.FC = () => {
 
   const { loginPlayer } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the 'from' location if it was passed in state, otherwise default to the player dashboard
+  const from = location.state?.from?.pathname || '/player/dashboard';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +31,12 @@ export const PlayerLogin: React.FC = () => {
       return;
     }
 
+    // Defensive check to ensure the login function is available from the context
+    if (!loginPlayer) {
+      setError('Player login service is not available.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const success = await loginPlayer(username.trim(), password);
@@ -39,8 +49,7 @@ export const PlayerLogin: React.FC = () => {
       // Small delay so spinner is visible and navigation isn't jarring
       setTimeout(() => {
         setIsLoading(false);
-        // Navigate to player dashboard (create this route if needed)
-        navigate('/player/dashboard');
+        navigate(from, { replace: true });
       }, 300);
     } catch (err) {
       setIsLoading(false);
