@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { usePlayerApi } from './usePlayerApi';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -68,6 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return sessionStorage.getItem('playerToken') || null;
   });
 
+  const { apiFetch } = usePlayerApi();
+
   const login = (userName: string, pass: string): boolean => {
     // Compare against environment-driven credentials
     if (userName === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
@@ -99,50 +102,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem('authUserId');
   };
 
-  const loginPlayer = async (username: string, pass: string): Promise<boolean> => {
-    if (!API_BASE_URL) {
-      console.warn('API_BASE_URL not configured; player login unavailable');
-      return false;
-    }
-
-    const normalizedUsername = sanitizeUsername(username);
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/player/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: normalizedUsername, password: pass })
-      });
-
-      if (!res.ok) {
-        // Try to surface the server error message for debugging
-        let body: unknown = null;
-        try {
-          body = await res.json();
-        } catch {
-          body = await res.text().catch(() => null);
-        }
-        console.warn(`[auth] player login failed: status=${res.status}`, body);
+  const loginPlayer = useCallback(
+    async (username: string, pass: string): Promise<boolean> => {
+      if (!API_BASE_URL) {
+        console.warn('API_BASE_URL not configured; player login unavailable');
         return false;
       }
 
-      const data = await res.json();
-      // expected: { token, user: { id, name, username } }
-      sessionStorage.setItem('playerToken', data.token);
-      sessionStorage.setItem('authUser', data.user.name);
-      sessionStorage.setItem('authRole', 'player');
-      sessionStorage.setItem('authUserId', data.user.id);
-      setIsAuthenticated(true);
-      setUser(data.user.name);
-      setRole('player');
-      setUserId(data.user.id);
-      setToken(data.token);
-      return true;
-    } catch (err) {
-      console.error('player login error', err);
-      return false;
-    }
-  };
+      const normalizedUsername = sanitizeUsername(username);
+
+      try {
+        const data = await apiFetch<{ token: string; user: { id: string; name: string; username: string } }>('/player/login', {
+          method: 'POST',
+          body: JSON.stringify({ username: normalizedUsername, password: pass }),
+        });
+
+        // expected: { token, user: { id, name, username } }
+        sessionStorage.setItem('playerToken', data.token);
+        sessionStorage.setItem('authUser', data.user.name);
+        sessionStorage.setItem('authRole', 'player');
+        sessionStorage.setItem('authUserId', data.user.id);
+        setIsAuthenticated(true);
+        setUser(data.user.name);
+        setRole('player');
+        setUserId(data.user.id);
+        setToken(data.token);
+        return true;
+      } catch (err) {
+        console.error('player login error', err);
+        return false;
+      }
+    }, [apiFetch]);
 
   // Sync logout across tabs (keeps state consistent)
   useEffect(() => {

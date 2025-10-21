@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState, useCallback } from 'react';
 import { User, Calendar, Shield, Hash } from 'lucide-react';
+import { usePlayerApi } from '../context/usePlayerApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface PlayerProfileData {
   player: {
@@ -32,41 +31,28 @@ const InfoCard: React.FC<{ title: string; value: string | React.ReactNode; icon:
 );
 
 export const PlayerProfile: React.FC = () => {
-  const { role, userId } = useAuth();
+  const { apiFetch, userId } = usePlayerApi();
   const [profile, setProfile] = useState<PlayerProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (role !== 'player' || !userId) {
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch<PlayerProfileData>(`/players/${userId}/profile`);
+      setProfile(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
       setLoading(false);
-      return;
     }
+  }, [apiFetch, userId]);
 
-    let mounted = true;
-    const fetchProfile = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE_URL}/players/${userId}/profile`);
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Failed to fetch profile');
-        }
-        const data: PlayerProfileData = await res.json();
-        if (mounted) {
-          setProfile(data);
-        }
-      } catch (err) {
-        if (mounted) setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchProfile();
-    return () => { mounted = false; };
-  }, [userId, role]);
+  useEffect(() => {
+    if (userId) fetchProfile();
+    else setLoading(false);
+  }, [fetchProfile, userId]);
 
   if (loading) {
     return (

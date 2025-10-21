@@ -15,12 +15,7 @@ import {
   SaveMatchPayload,
   SaveMatchResponse,
 } from '../types/cricket'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-if (!import.meta.env.VITE_API_URL) {
-  console.warn("VITE_API_URL is not set in .env file. Defaulting to http://localhost:5000");
-}
+import { usePlayerApi } from './usePlayerApi';
 
 interface AddPlayerPayload {
   name: string;
@@ -76,48 +71,36 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Use the centralized API hook
+  const { apiFetch } = usePlayerApi();
 
   const refreshData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [playersResponse, matchesResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/players`),
-        fetch(`${API_BASE_URL}/api/matches`)
+      const [players, matches] = await Promise.all([
+        apiFetch<Player[]>('/players'),
+        apiFetch<Match[]>('/matches'),
       ]);
-
-      if (!playersResponse.ok) throw new Error('Failed to fetch players');
-      if (!matchesResponse.ok) throw new Error('Failed to fetch matches');
-
-      const playersData: Player[] = await playersResponse.json();
-      const matchesData: Match[] = await matchesResponse.json();
-
-      setPlayers(playersData);
-      setMatches(matchesData);
+      setPlayers(players);
+      setMatches(matches);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
-  }, []);
+  }, [apiFetch]);
 
   // ---- Player operations ----
   const addPlayer = async (payload: string | AddPlayerPayload): Promise<AddPlayerResponse | null> => {
     const body: AddPlayerPayload = typeof payload === 'string' ? { name: payload } : payload;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players`, {
+      const data = await apiFetch<AddPlayerResponse>('/players', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || 'Failed to create player');
-      }
-
-      const data: AddPlayerResponse = await response.json();
       const createdPlayer: Player = data.player;
 
       // defensive check
@@ -138,18 +121,10 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players/${id}`, {
+      const updatedPlayer = await apiFetch<Player>(`/players/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update player')
-      }
-
-      const updatedPlayer: Player = await response.json()
+      });
 
       // After a successful update, refresh all data to ensure consistency,
       // especially for derived data like usernames and man_of_match references.
@@ -163,11 +138,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const deletePlayer = async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players/${id}`, {
-        method: 'DELETE'
-      })
-      if (!response.ok) throw new Error('Failed to delete player')
-      await refreshData()
+      await apiFetch(`/players/${id}`, { method: 'DELETE' });
+      await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete player')
     }
@@ -175,17 +147,9 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const resetPlayerPassword = async (id: string): Promise<AddPlayerResponse | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players/${id}/reset-password`, {
+      return await apiFetch<AddPlayerResponse>(`/players/${id}/reset-password`, {
         method: 'POST',
       });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || 'Failed to reset password');
-      }
-
-      const data: AddPlayerResponse = await response.json();
-      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password');
       return null;
@@ -197,18 +161,10 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     matchData: SaveMatchPayload
   ): Promise<SaveMatchResponse | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/matches`, {
+      const data = await apiFetch<SaveMatchResponse>('/matches', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(matchData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save match')
-      }
-
-      const data: SaveMatchResponse = await response.json()
+      });
       await refreshData()
       return data
     } catch (err) {
@@ -219,11 +175,8 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const deleteMatch = async (matchId: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}`, {
-        method: 'DELETE'
-      })
-      if (!response.ok) throw new Error('Failed to delete match')
-      await refreshData()
+      await apiFetch(`/matches/${matchId}`, { method: 'DELETE' });
+      await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete match')
     }
@@ -233,10 +186,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     matchId: string
   ): Promise<MatchPlayerStats[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}/stats`)
-      if (!response.ok) throw new Error('Failed to fetch player stats')
-      const data: MatchPlayerStats[] = await response.json()
-      return data
+      return await apiFetch<MatchPlayerStats[]>(`/matches/${matchId}/stats`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch player stats')
       return []
@@ -247,18 +197,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     playerId: string
   ): Promise<PlayerStats | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players/stats/${playerId}`);
-
-      if (response.status === 404) {
-        setError(`Player with ID ${playerId} not found.`);
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch player stats');
-      }
-      const data: PlayerStats = await response.json();
-      return data;
+      return await apiFetch<PlayerStats>(`/players/stats/${playerId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch player stats');
       return null;
@@ -267,15 +206,12 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
 
   const getAllPlayerStats = useCallback(async (): Promise<PlayerStats[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/players/stats/all`)
-      if (!response.ok) throw new Error('Failed to fetch all player stats')
-      const data: PlayerStats[] = await response.json()
-      return data
+      return await apiFetch<PlayerStats[]>('/players/stats/all');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch all player stats')
       return []
     }
-  }, []);
+  }, [apiFetch, setError]);
 
   useEffect(() => {
     refreshData()

@@ -3,8 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { BarChart3, Target, GitCommit, Trophy, Award, User, History, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import dayjs from 'dayjs';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { usePlayerApi } from '../context/usePlayerApi';
 
 interface PlayerDashboardStats {
   player: { id: string; name: string };
@@ -40,7 +39,8 @@ const StatHighlight: React.FC<{ label: string; value: string | number; icon: Rea
 );
 
 const PlayerDashboard: React.FC = () => {
-  const { role, userId, user } = useAuth();
+  const { user } = useAuth();
+  const { apiFetch, userId } = usePlayerApi();
   const [stats, setStats] = useState<PlayerDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,40 +48,23 @@ const PlayerDashboard: React.FC = () => {
   const [history, setHistory] = useState<MatchHistoryEntry[]>([]);
 
   const fetchData = useCallback(async () => {
-    if (role !== 'player' || !userId) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, historyRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/players/stats/${userId}`),
-        fetch(`${API_BASE_URL}/players/${userId}/history?limit=5`) // Fetch last 5 matches
+      const [statsData, historyData] = await Promise.all([
+        apiFetch<PlayerDashboardStats>(`/players/stats/${userId}`),
+        apiFetch<MatchHistoryEntry[]>(`/players/${userId}/history?limit=5`)
       ]);
 
-      if (!statsRes.ok) {
-        const errData = await statsRes.json().catch(() => null);
-        throw new Error(errData?.error || 'Failed to fetch stats');
-      }
-      if (!historyRes.ok) {
-        const errData = await historyRes.json().catch(() => null);
-        throw new Error(errData?.error || 'Failed to fetch match history');
-      }
-
-      const statsData: PlayerDashboardStats = await statsRes.json();
-      const historyData: MatchHistoryEntry[] = await historyRes.json();
-
-      setStats(statsData);
-      setHistory(historyData);
+      setStats(statsData ?? null);
+      setHistory(historyData ?? []);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
-  }, [role, userId]);
+  }, [apiFetch, userId]);
 
   useEffect(() => {
     fetchData();

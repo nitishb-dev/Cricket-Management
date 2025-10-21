@@ -12,7 +12,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --- Middlewares ---
-app.use(cors());
+// In production, only allow requests from your frontend's domain.
+const corsOptions = {
+  origin:
+    process.env.NODE_ENV === "production"
+      ? process.env.FRONTEND_URL // Your Vercel URL
+      : "*", // Allow all for local development
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // ----------------- ROUTES -----------------

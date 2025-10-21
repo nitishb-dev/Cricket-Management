@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState, useCallback } from 'react';
 import { History, Trophy } from 'lucide-react';
 import dayjs from 'dayjs';
+import { usePlayerApi } from '../context/usePlayerApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 type MatchEntry = {
   id: string;
@@ -25,37 +24,28 @@ type MatchEntry = {
 };
 
 const PlayerHistory: React.FC = () => {
-  const { role, userId } = useAuth();
+  const { apiFetch, userId } = usePlayerApi();
   const [history, setHistory] = useState<MatchEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (role !== 'player' || !userId) {
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch<MatchEntry[]>(`/players/${userId}/history`);
+      setHistory(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load history');
+    } finally {
       setLoading(false);
-      return;
     }
+  }, [apiFetch, userId]);
 
-    let mounted = true;
-    const fetchHistory = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE_URL}/players/${userId}/history`);
-        if (!res.ok) throw new Error('Failed to fetch history');
-        const json: MatchEntry[] = await res.json();
-        if (!mounted) return;
-        setHistory(json || []);
-      } catch (err) {
-        if (mounted) setError(err instanceof Error ? err.message : 'Failed to load history');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchHistory();
-    return () => { mounted = false; };
-  }, [role, userId]);
+  useEffect(() => {
+    if (userId) fetchHistory();
+    else setLoading(false);
+  }, [fetchHistory, userId]);
 
   return (
     <div className="space-y-8">
