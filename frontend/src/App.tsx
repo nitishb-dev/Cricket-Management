@@ -19,15 +19,6 @@ import { AuthProvider } from './context/AuthContext';
 import { CricketProvider } from './context/CricketContext';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
-// This new component will wrap our protected routes and provide the necessary context.
-const ProtectedLayout: React.FC = () => (
-  <AuthProvider>
-    <CricketProvider>
-      <Outlet />
-    </CricketProvider>
-  </AuthProvider>
-);
-
 const router = createBrowserRouter([
   // Public login choice and auth routes
   {
@@ -45,14 +36,20 @@ const router = createBrowserRouter([
 
   // New protected admin area sits under /app/*
   {
-    element: <ProtectedLayout />,
+    element: (
+      <AuthProvider>
+        <CricketProvider>
+          <Outlet />
+        </CricketProvider>
+      </AuthProvider>
+    ),
     children: [
       {
         path: '/app',
         element: <ProtectedRoute />,
         children: [
           {
-            element: <MainLayout />, // MainLayout now becomes a direct child
+            element: <MainLayout />,
             children: [
               { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <Dashboard /> },
@@ -70,7 +67,7 @@ const router = createBrowserRouter([
         element: <PlayerProtectedRoute />,
         children: [
           {
-            element: <PlayerLayout />, // PlayerLayout now becomes a direct child
+            element: <PlayerLayout />,
             children: [
               { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <PlayerDashboard /> },
