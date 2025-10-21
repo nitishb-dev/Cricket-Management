@@ -2,10 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { BarChart3, Trophy, Target, Award, TrendingUp, User, RefreshCw, Shield, Zap, GitCommit, GitMerge } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { useAuth } from '../context/AuthContext'
+import { usePlayerApi } from '../context/usePlayerApi'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
 import { StatCard } from './StatCard'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface DetailedPlayerStats {
   player: { id: string; name: string };
@@ -33,6 +32,7 @@ interface DetailedPlayerStats {
 export const PlayerStats: React.FC = () => {
   const { getAllPlayerStats, loading } = useCricket()
   const { role, userId } = useAuth()
+  const { apiFetch } = usePlayerApi()
 
   // State for admin view (all players)
   const [playerStats, setPlayerStats] = useState<CricketPlayerStats[]>([])
@@ -70,9 +70,8 @@ export const PlayerStats: React.FC = () => {
       setMyStatsLoading(true);
       setMyStatsError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/players/${userId}/detailed-stats`);
-        if (!res.ok) throw new Error('Failed to fetch your stats');
-        const data: DetailedPlayerStats = await res.json();
+        // Use the centralized apiFetch hook which correctly builds the URL
+        const data = await apiFetch<DetailedPlayerStats>(`/players/${userId}/detailed-stats`);
         setMyStats(data);
       } catch (err) {
         setMyStatsError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -82,7 +81,7 @@ export const PlayerStats: React.FC = () => {
     };
 
     fetchMyStats();
-  }, [role, userId]);
+  }, [role, userId, apiFetch]);
 
   // Admin: Memoized top performers
   const getTopPerformers = (key: keyof Omit<CricketPlayerStats, 'player'>) => {
