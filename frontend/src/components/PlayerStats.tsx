@@ -8,25 +8,22 @@ import { StatCard } from './StatCard'
 
 interface DetailedPlayerStats {
   player: { id: string; name: string };
-  batting: {
-    matches: number;
-    runs: number;
-    average: number;
+  totalMatches: number;
+  totalRuns: number;
+  totalWickets: number;
+  totalWins: number;
+  manOfMatchCount: number;
+  battingAverage: string;
+  bowlingAverage: string;
+  winPercentage: string;
+  boundaries: {
+    ones: number;
+    twos: number;
+    threes: number;
     fours: number;
     sixes: number;
   };
-  bowling: {
-    matches: number;
-    wickets: number;
-  };
-  fielding: {
-    catches: number;
-    stumpings: number;
-  };
-  general: {
-    manOfMatch: number;
-    wins: number;
-  };
+  recentMatches: any[];
 }
 
 export const PlayerStats: React.FC = () => {
@@ -71,7 +68,7 @@ export const PlayerStats: React.FC = () => {
       setMyStatsError(null);
       try {
         // Use the centralized apiFetch hook which correctly builds the URL
-        const data = await apiFetch<DetailedPlayerStats>(`/players/${userId}/detailed-stats`);
+        const data = await apiFetch<DetailedPlayerStats>(`/player/detailed-stats`);
         setMyStats(data);
       } catch (err) {
         setMyStatsError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -113,12 +110,17 @@ export const PlayerStats: React.FC = () => {
           <div className="p-8 text-center text-red-600 mt-8">
             <h2 className="text-xl font-bold">Error Loading Stats</h2>
             <p>{myStatsError || 'Could not find your statistics.'}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
           </div>
         </div>
       );
     }
 
-    const { batting, bowling, general } = myStats;
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -134,19 +136,19 @@ export const PlayerStats: React.FC = () => {
 
         {/* General Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard label="Matches Played" value={batting.matches} icon={<BarChart3 />} />
-          <StatCard label="Matches Won" value={general.wins} icon={<Trophy />} />
-          <StatCard label="Man of the Match" value={general.manOfMatch} icon={<Award />} />
+          <StatCard label="Matches Played" value={myStats.totalMatches} icon={<BarChart3 />} />
+          <StatCard label="Matches Won" value={myStats.totalWins} icon={<Trophy />} />
+          <StatCard label="Man of the Match" value={myStats.manOfMatchCount} icon={<Award />} />
         </div>
 
         {/* Batting Stats */}
         <div className="card p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Runs" value={batting.runs} icon={<Target />} />
-            <StatCard label="Average" value={batting.average} icon={<TrendingUp />} />
-            <StatCard label="Fours" value={batting.fours} icon={<GitMerge />} />
-            <StatCard label="Sixes" value={batting.sixes} icon={<Zap />} />
+            <StatCard label="Total Runs" value={myStats.totalRuns} icon={<Target />} />
+            <StatCard label="Average" value={myStats.battingAverage} icon={<TrendingUp />} />
+            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} />
+            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} />
           </div>
         </div>
 
@@ -154,10 +156,22 @@ export const PlayerStats: React.FC = () => {
         <div className="card p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Wickets" value={bowling.wickets} icon={<GitCommit />} />
-            <StatCard label="Runs Conceded" value="N/A" icon={<Shield />} />
-            <StatCard label="Economy" value="N/A" icon={<Shield />} />
+            <StatCard label="Total Wickets" value={myStats.totalWickets} icon={<GitCommit />} />
+            <StatCard label="Bowling Average" value={myStats.bowlingAverage} icon={<Shield />} />
+            <StatCard label="Win Percentage" value={myStats.winPercentage} icon={<TrendingUp />} />
             <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
+          </div>
+        </div>
+
+        {/* Boundary Stats */}
+        <div className="card p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Boundary Breakdown</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <StatCard label="Ones" value={myStats.boundaries.ones} icon={<Target />} />
+            <StatCard label="Twos" value={myStats.boundaries.twos} icon={<Target />} />
+            <StatCard label="Threes" value={myStats.boundaries.threes} icon={<Target />} />
+            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} />
+            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} />
           </div>
         </div>
       </div>

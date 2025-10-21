@@ -25,7 +25,7 @@ const adminNavItems: ActiveView[] = ['dashboard', 'players', 'new-match', 'histo
 const playerNavItems: ActiveView[] = ['dashboard', 'history', 'stats']
 
 export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admin' }) => {
-  const { user, logout } = useAuth()
+  const { user, logout, clubName } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -72,7 +72,10 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <LayoutDashboard className="text-green-600" size={24} />
-              <h1 className="text-lg font-bold text-gray-800">Cricket Manager</h1>
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">Cricket Manager</h1>
+                {clubName && <p className="text-xs text-gray-500">{clubName}</p>}
+              </div>
             </div>
 
             {/* Mobile Profile Dropdown */}
@@ -94,15 +97,26 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                   </div>
 
                   {role === 'player' && (
-                    <button
-                      onClick={() => {
-                        navigate('/player/profile')
-                        setMenuOpen(false)
-                      }}
-                      className="dropdown-item w-full flex items-center gap-2 px-4"
-                    >
-                      <User size={16} /> Profile
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate('/player/profile')
+                          setMenuOpen(false)
+                        }}
+                        className="dropdown-item w-full flex items-center gap-2 px-4"
+                      >
+                        <User size={16} /> View Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/player/edit-profile')
+                          setMenuOpen(false)
+                        }}
+                        className="dropdown-item w-full flex items-center gap-2 px-4"
+                      >
+                        <User size={16} /> Edit Profile
+                      </button>
+                    </>
                   )}
 
                   <button
@@ -128,7 +142,10 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                 <div className="absolute inset-0 bg-white/20 rounded-full blur-lg"></div>
                 <LayoutDashboard className="relative text-white" size={32} />
               </div>
-              <h1 className="text-2xl font-bold text-white">Cricket Manager</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Cricket Manager</h1>
+                {clubName && <p className="text-sm text-green-100">{clubName}</p>}
+              </div>
             </div>
 
             {/* Navigation Links */}
@@ -180,15 +197,26 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                     </div>
 
                     {role === 'player' && (
-                      <button
-                        onClick={() => {
-                          navigate('/player/profile')
-                          setMenuOpen(false)
-                        }}
-                        className="dropdown-item w-full flex items-center gap-2 px-4"
-                      >
-                        <User size={16} /> Profile
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate('/player/profile')
+                            setMenuOpen(false)
+                          }}
+                          className="dropdown-item w-full flex items-center gap-2 px-4"
+                        >
+                          <User size={16} /> View Profile
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/player/edit-profile')
+                            setMenuOpen(false)
+                          }}
+                          className="dropdown-item w-full flex items-center gap-2 px-4"
+                        >
+                          <User size={16} /> Edit Profile
+                        </button>
+                      </>
                     )}
 
                     <button

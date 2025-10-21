@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { initializeDatabase } from "./db-setup.js";
+import authRoutes from "./routes/auth.js";
 import playerRoutes from "./routes/players.js";
 import matchRoutes from "./routes/matches.js";
-import authRoutes from "./routes/auth.js";
+import playerAuthRoutes from "./routes/player-auth.js";
 
 // Load environment variables
 dotenv.config();
@@ -47,9 +49,11 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "working!", timestamp: new Date() });
 });
 
-// mount auth routes so /api/player/login works
-app.use("/api", authRoutes);
+// Authentication routes (public)
+app.use("/api/auth", authRoutes);
+app.use("/api/player", playerAuthRoutes);
 
+// Protected routes (require authentication)
 app.use("/api/players", playerRoutes);
 app.use("/api/matches", matchRoutes);
 
@@ -68,7 +72,18 @@ app.use((err, req, res, next) => {
 });
 
 // --- Server Startup ---
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log("Database schema should be managed via the Supabase dashboard.");
-});
+const startServer = async () => {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, () => {
+      console.log(`🚀 Multi-tenant Cricket Management Server running at http://localhost:${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth/*`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

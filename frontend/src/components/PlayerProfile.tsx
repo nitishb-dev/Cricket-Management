@@ -1,19 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { User, Calendar, Shield, Hash } from 'lucide-react';
+import { User, Calendar, Shield, Hash, Globe, Cake } from 'lucide-react';
 import { usePlayerApi } from '../context/usePlayerApi';
 
 
 interface PlayerProfileData {
-  player: {
-    id: string;
-    name: string;
-    username: string;
-    created_at: string;
-  };
-  career: {
-    teams: string[];
-    firstMatchDate: string | null;
-  };
+  id: string;
+  name: string;
+  username: string;
+  clubId: string;
+  clubName: string;
+  joinedAt: string;
+  dateOfBirth: string | null;
+  country: string | null;
+  totalMatches: number;
+  firstMatchDate: string | null;
+  teamsPlayedFor: string[];
 }
 
 const formatDate = (d?: string | null) => {
@@ -21,6 +22,20 @@ const formatDate = (d?: string | null) => {
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+const calculateAge = (dateOfBirth?: string | null) => {
+  if (!dateOfBirth) return null;
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
 };
 
 const InfoCard: React.FC<{ title: string; value: string | React.ReactNode; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
@@ -40,7 +55,7 @@ export const PlayerProfile: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<PlayerProfileData>(`/players/${userId}/profile`);
+      const data = await apiFetch<PlayerProfileData>(`/player/profile`);
       setProfile(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -73,8 +88,6 @@ export const PlayerProfile: React.FC = () => {
     );
   }
 
-  const { player, career } = profile;
-
   return (
     <div className="space-y-8">
       {/* Player Header */}
@@ -83,8 +96,27 @@ export const PlayerProfile: React.FC = () => {
           <User size={64} className="text-gray-400" />
         </div>
         <div className="text-center sm:text-left">
-          <h1 className="text-4xl font-bold text-gray-800">{player.name}</h1>
+          <h1 className="text-4xl font-bold text-gray-800">{profile.name}</h1>
           <p className="text-lg text-gray-600">Player Profile</p>
+        </div>
+      </div>
+
+      {/* Personal Information */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Personal Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InfoCard title="Username" value={profile.username} icon={User} />
+          <InfoCard title="Club" value={profile.clubName} icon={Shield} />
+          <InfoCard 
+            title="Date of Birth" 
+            value={
+              profile.dateOfBirth 
+                ? `${formatDate(profile.dateOfBirth)} (Age: ${calculateAge(profile.dateOfBirth)})` 
+                : 'Not set'
+            } 
+            icon={Cake} 
+          />
+          <InfoCard title="Country" value={profile.country || 'Not set'} icon={Globe} />
         </div>
       </div>
 
@@ -92,10 +124,35 @@ export const PlayerProfile: React.FC = () => {
       <div className="card p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Account Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <InfoCard title="Username" value={player.username} icon={Hash} />
-          <InfoCard title="Player Since" value={formatDate(player.created_at)} icon={Calendar} />
-          <InfoCard title="Teams Played For" value={career.teams.length > 0 ? career.teams.join(', ') : 'No teams yet'} icon={Shield} />
-          <InfoCard title="First Match" value={formatDate(career.firstMatchDate)} icon={Calendar} />
+          <InfoCard title="Player ID" value={profile.id.slice(0, 8) + '...'} icon={Hash} />
+          <InfoCard title="Member Since" value={formatDate(profile.joinedAt)} icon={Calendar} />
+        </div>
+      </div>
+
+      {/* Career Statistics */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Career Overview</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InfoCard 
+            title="Total Matches" 
+            value={profile.totalMatches} 
+            icon={Calendar} 
+          />
+          <InfoCard 
+            title="First Match" 
+            value={formatDate(profile.firstMatchDate)} 
+            icon={Calendar} 
+          />
+          <InfoCard 
+            title="Teams Played For" 
+            value={profile.teamsPlayedFor.length > 0 ? profile.teamsPlayedFor.join(', ') : 'No teams yet'} 
+            icon={Shield} 
+          />
+          <InfoCard 
+            title="Career Status" 
+            value={profile.totalMatches > 0 ? 'Active Player' : 'New Player'} 
+            icon={User} 
+          />
         </div>
       </div>
     </div>

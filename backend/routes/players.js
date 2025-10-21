@@ -1,19 +1,25 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { supabase } from "../db.js";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
+import { supabase } from "../db.js";
+import { authenticateToken } from "./auth.js";
 
 const router = Router();
-const SALT_ROUNDS = 10;
 
-// Get all players
+// Apply authentication to all routes
+router.use(authenticateToken);
+
+// Get all players for the authenticated admin's club
 router.get("/", async (req, res, next) => {
   try {
+    const { clubId } = req.user;
+    
     const { data, error } = await supabase
       .from("players")
       .select("*")
+      .eq("club_id", clubId)
       .order("name");
+      
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -21,200 +27,171 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-/**
- * Create player
- * - Accepts: { name, username?, password? }
- * - If username not provided -> use name as username
- * - If password not provided -> server generates a secure random token and returns it in response (one-time)
- * - Stored in DB: password_hash only (never store plaintext)
- */
+// Generate random password for players
+const generatePlayerPassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let password = '';
+  for (let i = 0; i < 6; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
+// Create player for the authenticated admin's club
 router.post("/", async (req, res, next) => {
-  // Only allow admin (your existing admin protection) to call this endpoint
-  const { name, username, password } = req.body;
+  const { name } = req.body;
+  const { clubId } = req.user;
+  
   if (!name) {
     return res.status(400).json({ error: "Player name required" });
   }
 
   try {
-    // Choose username: provided || name
-    let usernameToUse = username ?? name;
-    // Sanitize the username to match the login and update logic
-    usernameToUse = usernameToUse
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ".")
-      .replace(/[^a-z0-9._-]/g, "");
-
-    // Generate random password if not provided
-    const rawPassword =
-      password && String(password).length > 0
-        ? String(password)
-        : crypto.randomBytes(6).toString("hex"); // 12 hex chars
-
-    // Hash password
-    const password_hash = await bcrypt.hash(rawPassword, SALT_ROUNDS);
-
     const id = uuidv4();
-
+    
+    // Generate username and password for player
+    const username = name.toLowerCase().replace(/\s+/g, '.');
+    const password = generatePlayerPassword();
+    const passwordHash = await bcrypt.hash(password, 10);
+    
     const { data: player, error } = await supabase
       .from("players")
-      .insert({
-        id,
-        name,
-        username: usernameToUse,
-        password_hash,
+      .insert({ 
+        id, 
+        name, 
+        club_id: clubId,
+        username,
+        password_hash: passwordHash
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    // Return created player and the raw password ONLY when the server generated it (or always if you prefer)
-    // If admin passed a password, they already know it; we only include it for generated passwords
-    const includePasswordInResponse = !password;
-
-    const responsePayload = {
+    res.status(201).json({
       player,
-      ...(includePasswordInResponse ? { generatedPassword: rawPassword } : {}),
-    };
-
-    res.status(201).json(responsePayload);
+      generatedPassword: password // Return password only during creation
+    });
   } catch (err) {
-    // Supabase/postgres unique violation commonly gives code '23505'
-    // If duplicate name/username occurs, return 409
-    const errCode = err?.code ?? err?.status ?? null;
-    if (errCode === "23505" || errCode === 23505) {
-      return res
-        .status(409)
-        .json({ error: "Player name/username already exists" });
+    // Handle unique constraint violation (player name already exists in club)
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "Player already exists in your club" });
     }
     next(err);
   }
 });
 
-// Update player
+// Update player (only if belongs to admin's club)
 router.put("/:id", async (req, res, next) => {
   const { id } = req.params;
   const { name: newName } = req.body;
+  const { clubId } = req.user;
+  
   if (!newName) {
     return res.status(400).json({ error: "Player name required" });
   }
 
   try {
-    // First, get the current name of the player to check for existence and for updating matches
+    // First, verify player belongs to admin's club and get current name
     const { data: player, error: playerError } = await supabase
       .from("players")
       .select("name")
       .eq("id", id)
+      .eq("club_id", clubId)
       .single();
 
     if (playerError || !player) {
-      return res.status(404).json({ error: "Player not found" });
+      return res.status(404).json({ error: "Player not found in your club" });
     }
+    
     const oldName = player.name;
 
-    // Generate a new username from the new name
-    const newUsername = newName
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ".")
-      .replace(/[^a-z0-9._-]/g, "");
-
-    // Update the player's name in the 'players' table
+    // Update the player's name
     const { data: updatedPlayer, error: updateError } = await supabase
       .from("players")
-      .update({ name: newName, username: newUsername })
+      .update({ name: newName })
       .eq("id", id)
+      .eq("club_id", clubId)
       .select()
       .single();
 
     if (updateError) throw updateError;
 
+    // Update man_of_match references in matches for this club
+    if (oldName !== newName) {
+      const { error: manOfMatchError } = await supabase
+        .from("matches")
+        .update({ man_of_match: newName })
+        .eq("man_of_match", oldName)
+        .eq("club_id", clubId);
+
+      if (manOfMatchError) {
+        console.error("Failed to update man_of_match references:", manOfMatchError);
+      }
+    }
+
     res.json(updatedPlayer);
   } catch (err) {
-    const errCode = err?.code ?? err?.status ?? null;
-    if (errCode === "23505" || errCode === 23505) {
-      return res
-        .status(409)
-        .json({ error: "A player with this name already exists" });
+    if (err.code === "23505") {
+      return res.status(409).json({ 
+        error: "A player with this name already exists in your club" 
+      });
     }
     next(err);
   }
 });
 
-/**
- * Reset a player's password (admin-only)
- * POST /api/players/:id/reset-password
- *
- * Generates a secure random password, stores only the bcrypt hash, and returns
- * the plaintext password in the response once so the admin can copy/send it.
- *
- * NOTE: This endpoint should be protected in a production app.
- */
-router.post("/:id/reset-password", async (req, res, next) => {
-  const { id } = req.params;
-  try {
-    // Generate a secure random password (12 hex chars)
-    const newPlain = crypto.randomBytes(6).toString("hex");
-    const newHash = await bcrypt.hash(newPlain, SALT_ROUNDS);
-
-    const { data: updated, error } = await supabase
-      .from("players")
-      .update({ password_hash: newHash })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (!updated) return res.status(404).json({ error: "Player not found" });
-
-    // Return the generated plaintext once (admin should copy/send it)
-    return res.json({ player: updated, generatedPassword: newPlain });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Delete player
+// Delete player (only if belongs to admin's club)
 router.delete("/:id", async (req, res, next) => {
   const { id } = req.params;
+  const { clubId } = req.user;
+  
   try {
     const { error, count } = await supabase
       .from("players")
       .delete({ count: "exact" })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("club_id", clubId);
 
     if (error) throw error;
 
     if (count === 0) {
-      return res.status(404).json({ error: "Player not found" });
+      return res.status(404).json({ error: "Player not found in your club" });
     }
+    
     res.status(200).json({ message: "Player deleted successfully" });
   } catch (err) {
     next(err);
   }
 });
 
-// Get all player stats
+// Get all player stats for the authenticated admin's club
 router.get("/stats/all", async (req, res, next) => {
   try {
-    const { data: playersData, error: playersError } = await supabase
+    const { clubId } = req.user;
+    
+    const { data: players, error: playersError } = await supabase
       .from("players")
-      .select(
-        "id, name, created_at, match_player_stats(*, matches(winner, man_of_match))"
-      );
+      .select(`
+        id, 
+        name, 
+        created_at, 
+        match_player_stats!inner(
+          *, 
+          matches!inner(winner, man_of_match)
+        )
+      `)
+      .eq("club_id", clubId)
+      .eq("match_player_stats.club_id", clubId)
+      .eq("match_player_stats.matches.club_id", clubId);
 
     if (playersError) throw playersError;
 
-    const stats = playersData.map((row) => ({
+    const stats = players.map((row) => ({
       player: { id: row.id, name: row.name, created_at: row.created_at },
-      totalMatches: [...new Set(row.match_player_stats.map((s) => s.match_id))]
-        .length,
+      totalMatches: [...new Set(row.match_player_stats.map((s) => s.match_id))].length,
       totalRuns: row.match_player_stats.reduce((sum, s) => sum + s.runs, 0),
-      totalWickets: row.match_player_stats.reduce(
-        (sum, s) => sum + s.wickets,
-        0
-      ),
+      totalWickets: row.match_player_stats.reduce((sum, s) => sum + s.wickets, 0),
       ones: row.match_player_stats.reduce((sum, s) => sum + s.ones, 0),
       twos: row.match_player_stats.reduce((sum, s) => sum + s.twos, 0),
       threes: row.match_player_stats.reduce((sum, s) => sum + s.threes, 0),
@@ -225,7 +202,7 @@ router.get("/stats/all", async (req, res, next) => {
       ).length,
       manOfMatchCount: row.match_player_stats.filter(
         (s) => s.matches && s.matches.man_of_match === row.name
-      ).length, // Reverted to use name
+      ).length,
     }));
 
     res.json(stats);
@@ -234,180 +211,215 @@ router.get("/stats/all", async (req, res, next) => {
   }
 });
 
-// GET route for a single player's stats by ID
+// Get single player stats (only if belongs to admin's club)
 router.get("/stats/:id", async (req, res, next) => {
   const { id } = req.params;
+  const { clubId } = req.user;
+  
   try {
     const { data: player, error } = await supabase
       .from("players")
-      .select("id, name, match_player_stats(*, matches(winner, man_of_match))")
+      .select(`
+        id, 
+        name, 
+        match_player_stats!inner(
+          *, 
+          matches!inner(winner, man_of_match)
+        )
+      `)
       .eq("id", id)
+      .eq("club_id", clubId)
+      .eq("match_player_stats.club_id", clubId)
+      .eq("match_player_stats.matches.club_id", clubId)
       .single();
 
     if (error || !player) {
-      return res.status(404).json({ error: "Player not found" });
+      return res.status(404).json({ error: "Player not found in your club" });
     }
 
     const stats = {
       totalRuns: player.match_player_stats.reduce((sum, s) => sum + s.runs, 0),
-      totalWickets: player.match_player_stats.reduce(
-        (sum, s) => sum + s.wickets,
-        0
-      ),
-      totalMatches: [
-        ...new Set(player.match_player_stats.map((s) => s.match_id)),
-      ].length,
+      totalWickets: player.match_player_stats.reduce((sum, s) => sum + s.wickets, 0),
+      totalMatches: [...new Set(player.match_player_stats.map((s) => s.match_id))].length,
       totalWins: player.match_player_stats.filter(
-        (s) => s.matches?.winner === s.team
+        (s) => s.matches && s.matches.winner === s.team
       ).length,
       manOfMatchCount: player.match_player_stats.filter(
         (s) => s.matches && s.matches.man_of_match === player.name
-      ).length, // Reverted to use name
+      ).length,
     };
 
     res.json({
       player: { id: player.id, name: player.name },
-      totalRuns: stats.totalRuns,
-      totalWickets: stats.totalWickets,
-      totalMatches: stats.totalMatches,
-      totalWins: stats.totalWins,
-      manOfMatchCount: stats.manOfMatchCount,
+      ...stats
     });
   } catch (err) {
     next(err);
   }
 });
 
-// Get player match history
+// Get player match history (only if belongs to admin's club)
 router.get("/:id/history", async (req, res, next) => {
   const { id } = req.params;
-  const { limit } = req.query;
+  const { clubId } = req.user;
+  const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+  
   try {
-    // Fetch match_player_stats rows for the player and include match metadata using Supabase relationship
-    let query = supabase
-      .from("match_player_stats")
-      .select("*, matches(*)")
-      .eq("player_id", id)
-      .order("created_at", { ascending: false });
-
-    if (limit && !isNaN(parseInt(limit, 10))) {
-      query = query.limit(parseInt(limit, 10));
-    }
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // Respond with the raw rows containing both stat and match info
-    res.json(data || []);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// GET route for a single player's profile details
-router.get("/:id/profile", async (req, res, next) => {
-  const { id } = req.params;
-  try {
-    // 1. Get basic player info
+    // First, verify player belongs to admin's club
     const { data: player, error: playerError } = await supabase
       .from("players")
-      .select("id, name, username, created_at")
+      .select("id")
       .eq("id", id)
+      .eq("club_id", clubId)
       .single();
 
     if (playerError || !player) {
-      return res.status(404).json({ error: "Player not found" });
+      return res.status(404).json({ error: "Player not found in your club" });
     }
 
-    // 2. Get all stats entries for the player
+    // Get player's match history
+    let query = supabase
+      .from("match_player_stats")
+      .select(`
+        *,
+        matches!inner(
+          id,
+          team_a_name,
+          team_b_name,
+          team_a_score,
+          team_a_wickets,
+          team_b_score,
+          team_b_wickets,
+          winner,
+          man_of_match,
+          match_date,
+          overs
+        )
+      `)
+      .eq("player_id", id)
+      .eq("club_id", clubId)
+      .eq("matches.club_id", clubId)
+      .order("matches(match_date)", { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get player detailed statistics (only if belongs to admin's club)
+router.get("/:id/detailed-stats", async (req, res, next) => {
+  const { id } = req.params;
+  const { clubId } = req.user;
+  
+  try {
+    // First, verify player belongs to admin's club
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("id, name")
+      .eq("id", id)
+      .eq("club_id", clubId)
+      .single();
+
+    if (playerError || !player) {
+      return res.status(404).json({ error: "Player not found in your club" });
+    }
+
+    // Get detailed stats
     const { data: stats, error: statsError } = await supabase
       .from("match_player_stats")
-      .select("team, matches(match_date)")
-      .eq("player_id", id);
+      .select(`
+        *,
+        matches!inner(winner, man_of_match, match_date)
+      `)
+      .eq("player_id", id)
+      .eq("club_id", clubId)
+      .eq("matches.club_id", clubId);
 
     if (statsError) throw statsError;
 
-    // 3. Process the stats to find unique teams and first match date
-    const teams = [...new Set(stats.map((s) => s.team).filter(Boolean))];
-    const firstMatchDate =
-      stats.length > 0
-        ? stats.reduce((earliest, current) => {
-            const earliestDate = new Date(earliest.matches.match_date);
-            const currentDate = new Date(current.matches.match_date);
-            return currentDate < earliestDate ? current : earliest;
-          }).matches.match_date
-        : null;
+    // Calculate detailed statistics
+    const totalMatches = [...new Set(stats.map(s => s.match_id))].length;
+    const totalRuns = stats.reduce((sum, s) => sum + s.runs, 0);
+    const totalWickets = stats.reduce((sum, s) => sum + s.wickets, 0);
+    const totalWins = stats.filter(s => s.matches && s.matches.winner === s.team).length;
+    const manOfMatchCount = stats.filter(s => s.matches && s.matches.man_of_match === player.name).length;
+    
+    // Calculate averages and other metrics
+    const battingAverage = totalMatches > 0 ? (totalRuns / totalMatches).toFixed(2) : "0.00";
+    const bowlingAverage = totalWickets > 0 ? (totalRuns / totalWickets).toFixed(2) : "N/A";
+    const winPercentage = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : "0.0";
+
+    // Boundary statistics
+    const boundaries = {
+      ones: stats.reduce((sum, s) => sum + s.ones, 0),
+      twos: stats.reduce((sum, s) => sum + s.twos, 0),
+      threes: stats.reduce((sum, s) => sum + s.threes, 0),
+      fours: stats.reduce((sum, s) => sum + s.fours, 0),
+      sixes: stats.reduce((sum, s) => sum + s.sixes, 0)
+    };
 
     res.json({
-      player,
-      career: {
-        teams,
-        firstMatchDate,
-      },
+      player: { id: player.id, name: player.name },
+      totalMatches,
+      totalRuns,
+      totalWickets,
+      totalWins,
+      manOfMatchCount,
+      battingAverage,
+      bowlingAverage,
+      winPercentage: `${winPercentage}%`,
+      boundaries,
+      recentMatches: stats.slice(0, 5) // Last 5 matches
     });
   } catch (err) {
     next(err);
   }
 });
 
-// GET route for a single player's DETAILED stats by ID
-router.get("/:id/detailed-stats", async (req, res, next) => {
+// Reset player password (only if belongs to admin's club)
+router.post("/:id/reset-password", async (req, res, next) => {
   const { id } = req.params;
+  const { clubId } = req.user;
+  
   try {
-    const { data: playerData, error } = await supabase
+    // First, verify player belongs to admin's club
+    const { data: player, error: playerError } = await supabase
       .from("players")
-      .select("id, name, match_player_stats(*, matches(winner, man_of_match))")
+      .select("name, username")
       .eq("id", id)
+      .eq("club_id", clubId)
       .single();
 
-    if (error || !playerData) {
-      return res.status(404).json({ error: "Player not found" });
+    if (playerError || !player) {
+      return res.status(404).json({ error: "Player not found in your club" });
     }
 
-    const allStats = playerData.match_player_stats;
+    // Generate new password
+    const newPassword = generatePlayerPassword();
+    const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    const batting = {
-      matches: [...new Set(allStats.map((s) => s.match_id))].length,
-      runs: allStats.reduce((sum, s) => sum + s.runs, 0),
-      balls: 0, // This would require storing balls_faced per player
-      average: 0,
-      strikeRate: 0,
-      fours: allStats.reduce((sum, s) => sum + s.fours, 0),
-      sixes: allStats.reduce((sum, s) => sum + s.sixes, 0),
-      // highestScore: Math.max(0, ...allStats.map(s => s.runs)), // This is highest score in a single match entry
-    };
+    // Update password in database
+    const { data: updatedPlayer, error: updateError } = await supabase
+      .from("players")
+      .update({ password_hash: passwordHash })
+      .eq("id", id)
+      .eq("club_id", clubId)
+      .select()
+      .single();
 
-    const bowling = {
-      matches: batting.matches,
-      wickets: allStats.reduce((sum, s) => sum + s.wickets, 0),
-      runsConceded: 0, // This would require storing runs_conceded per bowler
-      economy: 0,
-      bestFigures: "0/0",
-    };
-
-    const fielding = {
-      catches: 0, // Not tracked
-      stumpings: 0, // Not tracked
-    };
-
-    const general = {
-      manOfMatch: allStats.filter(
-        (s) => s.matches && s.matches.man_of_match === playerData.name
-      ).length, // Reverted to use name
-      wins: allStats.filter((s) => s.matches && s.matches.winner === s.team)
-        .length,
-    };
-
-    // Calculate averages that depend on other stats
-    batting.average =
-      batting.matches > 0 ? +(batting.runs / batting.matches).toFixed(2) : 0;
+    if (updateError) throw updateError;
 
     res.json({
-      player: { id: playerData.id, name: playerData.name },
-      batting,
-      bowling,
-      fielding,
-      general,
+      player: updatedPlayer,
+      generatedPassword: newPassword
     });
   } catch (err) {
     next(err);

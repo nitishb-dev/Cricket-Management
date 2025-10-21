@@ -1,137 +1,193 @@
-import React, { useState } from 'react';
-import { LogIn, Trophy, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, User, Lock, AlertCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ClubRegistration } from './ClubRegistration';
+import { ForgotPassword } from './ForgotPassword';
 
 export const AdminLogin: React.FC = () => {
+  const navigate = useNavigate();
+  const { checkAuthStatus } = useAuth();
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [initialCredentials, setInitialCredentials] = useState<{ username: string; password: string } | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Type-safe helper to detect Promise-like values without using `any`
-  function isPromise<T = unknown>(value: unknown): value is Promise<T> {
-    return !!value && typeof (value as { then?: unknown }).then === 'function';
-  }
+  // Update form when initial credentials are provided
+  useEffect(() => {
+    if (initialCredentials) {
+      setUsername(initialCredentials.username);
+      setPassword(initialCredentials.password);
+    }
+  }, [initialCredentials]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    setError('');
-    setIsLoading(true);
+    setLoading(true);
+    setError(null);
 
     try {
-      // treat login result as unknown (it could be boolean or Promise<boolean>)
-      const result = login(username, password) as unknown;
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
+      });
 
-      let success = false;
+      const data = await response.json();
 
-      if (isPromise<boolean>(result)) {
-        // login returned a Promise<boolean>
-        success = await result;
-      } else {
-        // login returned a boolean synchronously (or something truthy/falsey)
-        success = Boolean(result);
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
 
-      if (!success) {
-        setError('Invalid username or password.');
-        setIsLoading(false);
-        return;
-      }
+      // Store token in localStorage
+      localStorage.setItem('cricket_admin_token', data.token);
+      localStorage.setItem('cricket_admin_data', JSON.stringify(data.admin));
 
-      // Brief delay so spinner is visible and navigation isn't jarring
-      setTimeout(() => {
-        setIsLoading(false);
-        // NOTE: Admin app now lives under /app
-        navigate('/app/dashboard');
-      }, 400);
+      // Update auth context state
+      checkAuthStatus();
+
+      // Navigate to admin dashboard
+      navigate('/app/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
-      setIsLoading(false);
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-2 sm:px-4 lg:px-6">
-      <div className="max-w-md w-full mx-auto">
+  const loginForm = (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 flex items-center justify-center p-4">
+      <div className="card max-w-md w-full p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center bg-gradient-primary rounded-full p-4 mb-4">
-            <Trophy className="text-white" size={40} />
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-gradient-primary rounded-2xl">
+              <Trophy className="w-8 h-8 text-white" />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Cricket Manager</h1>
-          <p className="text-gray-600">Admin Login</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Cricket Club Admin
+          </h1>
+          <p className="text-gray-600">
+            Sign in to manage your cricket club
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleLogin} className="space-y-6" aria-busy={isLoading}>
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="input-field mt-1"
-                required
-                disabled={isLoading}
-                aria-disabled={isLoading}
-              />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <User className="inline w-4 h-4 mr-1" />
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="input-field"
+              placeholder="Enter your username"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Lock className="inline w-4 h-4 mr-1" />
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="Enter your password"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <AlertCircle size={16} />
+              <span className="text-sm">{error}</span>
             </div>
+          )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pr-10"
-                  required
-                  disabled={isLoading}
-                  aria-disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+          <button
+            type="submit"
+            disabled={loading || !username.trim() || !password.trim()}
+            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                Signing In...
+              </>
+            ) : (
+              <>
+                <LogIn size={20} />
+                Sign In
+              </>
+            )}
+          </button>
+        </form>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
+        <div className="mt-6 text-center space-y-3">
+          <div>
+            <p className="text-gray-600 mb-2">Don't have a club account?</p>
             <button
-              type="submit"
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              disabled={isLoading}
+              onClick={() => setShowRegistration(true)}
+              className="text-green-600 hover:text-green-700 font-medium"
             >
-              {isLoading ? (
-                <>
-                  <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn size={18} /> Login
-                </>
-              )}
+              Register Your Cricket Club
             </button>
-          </form>
+          </div>
+          
+          <div>
+            <p className="text-gray-600 mb-2">Forgot your password?</p>
+            <button
+              onClick={() => setShowForgotPassword(true)}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Reset Password
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
+
+  if (showRegistration) {
+    return (
+      <ClubRegistration
+        onSuccess={(credentials) => {
+          setInitialCredentials(credentials);
+          setShowRegistration(false);
+        }}
+        onBackToLogin={() => setShowRegistration(false)}
+      />
+    );
+  }
+
+  if (showForgotPassword) {
+    return (
+      <ForgotPassword
+        onSuccess={(credentials) => {
+          setInitialCredentials(credentials);
+          setShowForgotPassword(false);
+        }}
+        onBackToLogin={() => setShowForgotPassword(false)}
+      />
+    );
+  }
+
+  return loginForm;
 };

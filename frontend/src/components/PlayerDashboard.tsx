@@ -52,8 +52,8 @@ const PlayerDashboard: React.FC = () => {
     setError(null);
     try {
       const [statsData, historyData] = await Promise.all([
-        apiFetch<PlayerDashboardStats>(`/players/stats/${userId}`),
-        apiFetch<MatchHistoryEntry[]>(`/players/${userId}/history?limit=5`)
+        apiFetch<PlayerDashboardStats>(`/player/detailed-stats`),
+        apiFetch<MatchHistoryEntry[]>(`/player/history?limit=5`)
       ]);
 
       setStats(statsData ?? null);
@@ -91,7 +91,7 @@ const PlayerDashboard: React.FC = () => {
     .slice()
     .reverse()
     .map((h) => ({
-      name: dayjs(h.matches?.match_date).format('MMM DD'),
+      name: h.matches?.match_date ? dayjs(h.matches.match_date).format('MMM DD') : 'N/A',
       runs: h.runs,
     }));
 
@@ -164,7 +164,9 @@ const PlayerDashboard: React.FC = () => {
                   <div key={h.id} className={`p-4 border-l-4 rounded-r-lg ${resultColor} flex flex-col sm:flex-row items-center justify-between gap-4`}>
                     <div>
                       <div className="font-semibold text-gray-800">{match.team_a_name} vs {match.team_b_name}</div>
-                      <div className="text-sm text-gray-500">{dayjs(match.match_date).format('MMM DD, YYYY')}</div>
+                      <div className="text-sm text-gray-500">
+                        {match.match_date ? dayjs(match.match_date).format('MMM DD, YYYY') : 'Date not available'}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 text-center">
                       <div>
