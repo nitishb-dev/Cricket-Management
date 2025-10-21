@@ -4,7 +4,8 @@ import React, {
   useContext,
   useState,
   useEffect,
-  ReactNode
+  ReactNode,
+  useCallback
 } from 'react'
 import {
   Player,
@@ -76,7 +77,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -98,7 +99,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     } finally {
       setLoading(false)
     }
-  }
+  }, []);
 
   // ---- Player operations ----
   const addPlayer = async (payload: string | AddPlayerPayload): Promise<AddPlayerResponse | null> => {
@@ -264,7 +265,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   };
 
-  const getAllPlayerStats = async (): Promise<PlayerStats[]> => {
+  const getAllPlayerStats = useCallback(async (): Promise<PlayerStats[]> => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/players/stats/all`)
       if (!response.ok) throw new Error('Failed to fetch all player stats')
@@ -274,11 +275,11 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       setError(err instanceof Error ? err.message : 'Failed to fetch all player stats')
       return []
     }
-  }
+  }, []);
 
   useEffect(() => {
     refreshData()
-  }, [])
+  }, [refreshData])
 
   const value: CricketContextType = {
     players,
