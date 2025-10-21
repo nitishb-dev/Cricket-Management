@@ -11,13 +11,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- Middlewares ---
-// In production, only allow requests from your frontend's domain.
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? (process.env.FRONTEND_URL || "").split(",").map((origin) => origin.trim())
+    : ["*"];
+
 const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? process.env.FRONTEND_URL // Your Vercel URL
-      : "*", // Allow all for local development
+  origin: (origin, callback) => {
+    // For development, allow all origins
+    if (allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
+    // For production, check against the whitelist
+    if (origin && allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
 };
 
 app.use(cors(corsOptions));
