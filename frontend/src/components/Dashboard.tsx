@@ -100,7 +100,7 @@ export const Dashboard: React.FC = () => {
 
             <div className="flex justify-center">
               <button
-                onClick={() => navigate('/new-match')}
+                onClick={() => navigate('/app/new-match')}
                 className="btn-secondary group flex items-center gap-3 w-full sm:w-auto justify-center"
               >
                 <Play size={20} className="group-hover:rotate-12 transition-transform" />
