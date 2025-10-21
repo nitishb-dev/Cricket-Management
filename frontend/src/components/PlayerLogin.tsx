@@ -31,12 +31,6 @@ export const PlayerLogin: React.FC = () => {
       return;
     }
 
-    // Defensive check to ensure the login function is available from the context
-    if (!loginPlayer) {
-      setError('Player login service is not available.');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const success = await loginPlayer(username.trim(), password);
