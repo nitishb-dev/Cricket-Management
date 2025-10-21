@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate} from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const LoginChoice: React.FC = () => {
@@ -42,16 +42,6 @@ const LoginChoice: React.FC = () => {
             Authenticated:{' '}
             <span className="font-medium">{isAuthenticated ? 'yes' : 'no'}</span>
             {role ? <span> — role: <strong>{role}</strong></span> : null}
-          </div>
-
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Link to="/admin-login" className="text-blue-600 underline text-xs">Go to Admin Login</Link>
-            <span className="text-gray-300">•</span>
-            <Link to="/player-login" className="text-blue-600 underline text-xs">Go to Player Login</Link>
-          </div>
-
-          <div className="text-gray-400 mt-2 text-xs">
-            If this page still appears blank, open the browser console (F12) and paste any errors here so I can debug.
           </div>
         </div>
       </div>
