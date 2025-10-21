@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return false;
   };
 
-  const logout = useCallback(() => {
+  const logout = useCallback((): void => {
     setIsAuthenticated(false);
     setUser(null);
     setRole(null);

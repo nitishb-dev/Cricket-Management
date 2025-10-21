@@ -1,10 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CricketProvider } from './context/CricketContext';
 import { AdminLogin } from './components/AdminLogin';
 import MainLayout from './MainLayout';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import { Dashboard } from './components/Dashboard';
 import { PlayerManagement } from './components/PlayerManagement';
 import { MatchSetup } from './components/MatchSetup';
@@ -17,6 +14,9 @@ import PlayerDashboard from './components/PlayerDashboard'; // Keep this import
 import PlayerHistory from './components/PlayerHistory';
 import PlayerLayout from './PlayerLayout';
 import PlayerProfile from './components/PlayerProfile';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
+import { CricketProvider } from './context/CricketContext';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
 const router = createBrowserRouter([
@@ -40,7 +40,13 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />, // only matches /app and its children
     children: [
       {
-        element: <MainLayout />,
+        element: (
+          <AuthProvider>
+            <CricketProvider>
+              <MainLayout />
+            </CricketProvider>
+          </AuthProvider>
+        ),
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <Dashboard /> },
@@ -68,7 +74,13 @@ const router = createBrowserRouter([
     element: <PlayerProtectedRoute />,
     children: [
       {
-        element: <PlayerLayout />,
+        element: (
+          <AuthProvider>
+            <CricketProvider>
+              <PlayerLayout />
+            </CricketProvider>
+          </AuthProvider>
+        ),
         children: [
           { path: 'dashboard', element: <PlayerDashboard /> },
           { path: 'profile', element: <PlayerProfile /> },
@@ -85,11 +97,7 @@ const router = createBrowserRouter([
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <CricketProvider>
-        <RouterProvider router={router} />
-      </CricketProvider>
-    </AuthProvider>
+    <RouterProvider router={router} />
   );
 };
 
