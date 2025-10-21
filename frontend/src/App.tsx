@@ -1,5 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CricketProvider } from './context/CricketContext';
 import { AdminLogin } from './components/AdminLogin';
 import MainLayout from './MainLayout';
 import { Dashboard } from './components/Dashboard';
@@ -81,7 +83,11 @@ const router = createBrowserRouter([
 
 const App: React.FC = () => {
   return (
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <CricketProvider>
+        <RouterProvider router={router} />
+      </CricketProvider>
+    </AuthProvider>
   );
 };
 
