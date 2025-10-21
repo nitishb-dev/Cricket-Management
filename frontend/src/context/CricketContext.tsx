@@ -7,6 +7,7 @@ import React, {
   ReactNode,
   useCallback
 } from 'react'
+import { useAuth } from './AuthContext';
 import {
   Player,
   Match,
@@ -15,8 +16,7 @@ import {
   SaveMatchPayload,
   SaveMatchResponse,
 } from '../types/cricket'
-import { usePlayerApi } from './usePlayerApi';
-
+ 
 interface AddPlayerPayload {
   name: string;
   username?: string;
@@ -71,17 +71,19 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Use the centralized API hook
-  const { apiFetch } = usePlayerApi();
+  // We need auth context to decide when to fetch data
+  const { isAuthenticated, token } = useAuth();
+  // We can't use the usePlayerApi hook here as it creates a dependency loop with AuthContext
+  // Re-implementing apiFetch locally is the safest approach for this context.
 
   const refreshData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const [players, matches] = await Promise.all([
-        apiFetch<Player[]>('/players'),
-        apiFetch<Match[]>('/matches'),
-      ]);
+        apiFetch<Player[]>('/players', { token }),
+        apiFetch<Match[]>('/matches', { token })
+      ])
       setPlayers(players);
       setMatches(matches);
     } catch (err) {
@@ -89,15 +91,15 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     } finally {
       setLoading(false)
     }
-  }, [apiFetch]);
+  }, [token]);
 
   // ---- Player operations ----
-  const addPlayer = async (payload: string | AddPlayerPayload): Promise<AddPlayerResponse | null> => {
+  const addPlayer = useCallback(async (payload: string | AddPlayerPayload): Promise<AddPlayerResponse | null> => {
     const body: AddPlayerPayload = typeof payload === 'string' ? { name: payload } : payload;
 
     try {
       const data = await apiFetch<AddPlayerResponse>('/players', {
-        method: 'POST',
+        method: 'POST', token,
         body: JSON.stringify(body)
       });
 
@@ -117,12 +119,12 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       setError(err instanceof Error ? err.message : 'Failed to create player');
       return null;
     }
-  }
+  }, [token]);
 
-  const updatePlayer = async (id: string, name: string): Promise<Player | null> => {
+  const updatePlayer = useCallback(async (id: string, name: string): Promise<Player | null> => {
     try {
       const updatedPlayer = await apiFetch<Player>(`/players/${id}`, {
-        method: 'PUT',
+        method: 'PUT', token,
         body: JSON.stringify({ name })
       });
 
@@ -134,27 +136,27 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       setError(err instanceof Error ? err.message : 'Failed to update player')
       return null
     }
-  }
+  }, [token, refreshData]);
 
-  const deletePlayer = async (id: string): Promise<void> => {
+  const deletePlayer = useCallback(async (id: string): Promise<void> => {
     try {
-      await apiFetch(`/players/${id}`, { method: 'DELETE' });
+      await apiFetch(`/players/${id}`, { method: 'DELETE', token });
       await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete player')
     }
-  }
+  }, [token, refreshData]);
 
-  const resetPlayerPassword = async (id: string): Promise<AddPlayerResponse | null> => {
+  const resetPlayerPassword = useCallback(async (id: string): Promise<AddPlayerResponse | null> => {
     try {
-      return await apiFetch<AddPlayerResponse>(`/players/${id}/reset-password`, {
+      return await apiFetch<AddPlayerResponse>(`/players/${id}/reset-password`, { token,
         method: 'POST',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password');
       return null;
     }
-  };
+  }, [token]);
 
   // ---- Match operations ----
   const saveMatch = async (
@@ -162,7 +164,7 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
   ): Promise<SaveMatchResponse | null> => {
     try {
       const data = await apiFetch<SaveMatchResponse>('/matches', {
-        method: 'POST',
+        method: 'POST', token,
         body: JSON.stringify(matchData)
       });
       await refreshData()
@@ -173,49 +175,52 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
     }
   }
 
-  const deleteMatch = async (matchId: string): Promise<void> => {
+  const deleteMatch = useCallback(async (matchId: string): Promise<void> => {
     try {
-      await apiFetch(`/matches/${matchId}`, { method: 'DELETE' });
+      await apiFetch(`/matches/${matchId}`, { method: 'DELETE', token });
       await refreshData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete match')
     }
-  }
+  }, [token, refreshData]);
 
-  const getMatchPlayerStats = async (
+  const getMatchPlayerStats = useCallback(async (
     matchId: string
   ): Promise<MatchPlayerStats[]> => {
     try {
-      return await apiFetch<MatchPlayerStats[]>(`/matches/${matchId}/stats`);
+      return await apiFetch<MatchPlayerStats[]>(`/matches/${matchId}/stats`, { token });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch player stats')
       return []
     }
-  }
+  }, [token]);
 
-  const getPlayerStats = async (
+  const getPlayerStats = useCallback(async (
     playerId: string
   ): Promise<PlayerStats | null> => {
     try {
-      return await apiFetch<PlayerStats>(`/players/stats/${playerId}`);
+      return await apiFetch<PlayerStats>(`/players/stats/${playerId}`, { token });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch player stats');
       return null;
     }
-  };
+  }, [token]);
 
   const getAllPlayerStats = useCallback(async (): Promise<PlayerStats[]> => {
     try {
-      return await apiFetch<PlayerStats[]>('/players/stats/all');
+      return await apiFetch<PlayerStats[]>('/players/stats/all', { token });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch all player stats')
       return []
     }
-  }, [apiFetch, setError]);
+  }, [token]);
 
   useEffect(() => {
-    refreshData()
-  }, [refreshData])
+    // Only fetch data if a user is authenticated (admin or player)
+    if (isAuthenticated) {
+      refreshData();
+    }
+  }, [isAuthenticated, refreshData]);
 
   const value: CricketContextType = {
     players,
@@ -239,4 +244,29 @@ export const CricketProvider: React.FC<CricketProviderProps> = ({ children }) =>
       {children}
     </CricketContext.Provider>
   )
+}
+
+// A stable, standalone fetch function that doesn't depend on component scope.
+async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit & { token?: string | null }
+): Promise<T> {
+  const { token, ...fetchOptions } = options;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const headers = new Headers(fetchOptions.headers || {});
+  headers.set('Content-Type', 'application/json');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+    ...fetchOptions,
+    headers
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: `API Error: ${response.status}` }));
+    throw new Error(errorData.error || 'An unknown API error occurred');
+  }
+  return response.json();
 }
