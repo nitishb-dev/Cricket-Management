@@ -13,7 +13,9 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? (process.env.FRONTEND_URL || "").split(",").map((origin) => origin.trim())
+    ? (process.env.FRONTEND_URL || "")
+        .split(",")
+        .map((origin) => origin.trim().replace(/\/$/, "")) // Remove trailing slashes
     : ["*"];
 
 const corsOptions = {
