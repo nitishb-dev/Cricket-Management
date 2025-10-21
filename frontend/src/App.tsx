@@ -1,5 +1,7 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CricketProvider } from './context/CricketContext';
 import { AdminLogin } from './components/AdminLogin';
 import MainLayout from './MainLayout';
 import { Dashboard } from './components/Dashboard';
@@ -16,60 +18,41 @@ import PlayerLayout from './PlayerLayout';
 import PlayerProfile from './components/PlayerProfile';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
-import { AuthProvider } from './context/AuthContext';
-
-const router = createBrowserRouter([
-  { path: '/', element: <LoginChoice /> },
-  { path: '/admin-login', element: <AdminLogin /> },
-  { path: '/player-login', element: <PlayerLogin /> },
-  {
-    path: '/app',
-    element: <ProtectedRoute />,
-    children: [
-      {
-        element: (
-          <AuthProvider>
-            <MainLayout />
-          </AuthProvider>
-        ),
-        children: [
-          { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <Dashboard /> },
-          { path: 'players', element: <PlayerManagement /> },
-          { path: 'new-match', element: <MatchSetup /> },
-          { path: 'play-match', element: <MatchPlay /> },
-          { path: 'history', element: <MatchHistory /> },
-          { path: 'stats', element: <PlayerStats /> },
-        ],
-      },
-    ],
-  },
-  {
-    path: '/player',
-    element: <PlayerProtectedRoute />,
-    children: [
-      {
-        element: (
-          <AuthProvider>
-            <PlayerLayout />
-          </AuthProvider>
-        ),
-        children: [
-          { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <PlayerDashboard /> },
-          { path: 'profile', element: <PlayerProfile /> },
-          { path: 'history', element: <PlayerHistory /> },
-          { path: 'stats', element: <PlayerStats /> },
-        ],
-      },
-    ],
-  },
-  { path: '*', element: <LoginChoice /> },
-]);
 
 const App: React.FC = () => {
   return (
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <AuthProvider>
+        <CricketProvider>
+          <Routes>
+            <Route path="/" element={<LoginChoice />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/player-login" element={<PlayerLogin />} />
+            <Route path="/app" element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="players" element={<PlayerManagement />} />
+                <Route path="new-match" element={<MatchSetup />} />
+                <Route path="play-match" element={<MatchPlay />} />
+                <Route path="history" element={<MatchHistory />} />
+                <Route path="stats" element={<PlayerStats />} />
+              </Route>
+            </Route>
+            <Route path="/player" element={<PlayerProtectedRoute />}>
+              <Route element={<PlayerLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<PlayerDashboard />} />
+                <Route path="profile" element={<PlayerProfile />} />
+                <Route path="history" element={<PlayerHistory />} />
+                <Route path="stats" element={<PlayerStats />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<LoginChoice />} />
+          </Routes>
+        </CricketProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 
