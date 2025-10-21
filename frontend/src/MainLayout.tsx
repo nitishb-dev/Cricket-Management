@@ -23,25 +23,6 @@ const MainLayout: React.FC = () => {
     return 'dashboard'; // Fallback for /app/
   }, [location.pathname]);
 
-  const handleStartMatch = (matchData: MatchData) => {
-    setCurrentMatch(matchData);
-    // Persist match data in location state for resilience to page reloads
-    navigate('/app/play-match', { state: { currentMatch: matchData } });
-  };
-
-  const handleMatchComplete = () => {
-    setCurrentMatch(null);
-    navigate('/app/history');
-  };
-
-  const handleRematch = (matchData: MatchData) => {
-    navigate('/app/new-match', { state: { teamA: matchData.teamA, teamB: matchData.teamB, overs: matchData.overs } });
-  };
-
-  const handleCancelSetup = () => {
-    navigate('/dashboard');
-  };
-
   // If we are on the /play-match route but have no match data, redirect to dashboard
   if (location.pathname === '/app/play-match' && !currentMatch) {
     return <Navigate to="/app/dashboard" replace />;
@@ -53,13 +34,13 @@ const MainLayout: React.FC = () => {
       {/* Add bottom padding for mobile nav. Top padding is handled by the sticky header. */}
       <main className="py-4 pb-24 px-2 sm:px-4 lg:px-6">
         <div>
-          <Outlet context={{ 
-            onStartMatch: handleStartMatch,
-            onMatchComplete: handleMatchComplete,
+          <Outlet context={{
+            onStartMatch: (matchData: MatchData) => { setCurrentMatch(matchData); navigate('/app/play-match', { state: { currentMatch: matchData } }); },
+            onMatchComplete: () => { setCurrentMatch(null); navigate('/app/history'); },
             // onCancelMatch is now the same as onCancelSetup
-            onCancelMatch: handleCancelSetup,
-            onRematch: handleRematch,
-            onCancelSetup: handleCancelSetup,
+            onCancelMatch: () => navigate('/dashboard'),
+            onRematch: (matchData: MatchData) => navigate('/app/new-match', { state: { teamA: matchData.teamA, teamB: matchData.teamB, overs: matchData.overs } }),
+            onCancelSetup: () => navigate('/dashboard'),
             // Pass the current match data through context
             currentMatch,
           }} />

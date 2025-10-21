@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { AdminLogin } from './components/AdminLogin';
 import MainLayout from './MainLayout';
 import { Dashboard } from './components/Dashboard';
@@ -19,6 +19,15 @@ import { AuthProvider } from './context/AuthContext';
 import { CricketProvider } from './context/CricketContext';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
+// This new component will wrap our protected routes and provide the necessary context.
+const ProtectedLayout: React.FC = () => (
+  <AuthProvider>
+    <CricketProvider>
+      <Outlet />
+    </CricketProvider>
+  </AuthProvider>
+);
+
 const router = createBrowserRouter([
   // Public login choice and auth routes
   {
@@ -36,25 +45,39 @@ const router = createBrowserRouter([
 
   // New protected admin area sits under /app/*
   {
-    path: '/app',
-    element: <ProtectedRoute />, // only matches /app and its children
+    element: <ProtectedLayout />,
     children: [
       {
-        element: (
-          <AuthProvider>
-            <CricketProvider>
-              <MainLayout />
-            </CricketProvider>
-          </AuthProvider>
-        ),
+        path: '/app',
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <Navigate to="dashboard" replace /> },
-          { path: 'dashboard', element: <Dashboard /> },
-          { path: 'players', element: <PlayerManagement /> },
-          { path: 'new-match', element: <MatchSetup /> },
-          { path: 'play-match', element: <MatchPlay /> },
-          { path: 'history', element: <MatchHistory /> },
-          { path: 'stats', element: <PlayerStats /> },
+          {
+            element: <MainLayout />,
+            children: [
+              { index: true, element: <Navigate to="dashboard" replace /> },
+              { path: 'dashboard', element: <Dashboard /> },
+              { path: 'players', element: <PlayerManagement /> },
+              { path: 'new-match', element: <MatchSetup /> },
+              { path: 'play-match', element: <MatchPlay /> },
+              { path: 'history', element: <MatchHistory /> },
+              { path: 'stats', element: <PlayerStats /> },
+            ],
+          },
+        ],
+      },
+      {
+        path: '/player',
+        element: <PlayerProtectedRoute />,
+        children: [
+          {
+            element: <PlayerLayout />,
+            children: [
+              { path: 'dashboard', element: <PlayerDashboard /> },
+              { path: 'profile', element: <PlayerProfile /> },
+              { path: 'history', element: <PlayerHistory /> },
+              { path: 'stats', element: <PlayerStats /> },
+            ],
+          },
         ],
       },
     ],
@@ -67,29 +90,6 @@ const router = createBrowserRouter([
   { path: '/play-match', element: <Navigate to="/app/play-match" replace /> },
   { path: '/history', element: <Navigate to="/app/history" replace /> },
   { path: '/stats', element: <Navigate to="/app/stats" replace /> },
-
-  // Player protected area
-  {
-    path: '/player',
-    element: <PlayerProtectedRoute />,
-    children: [
-      {
-        element: (
-          <AuthProvider>
-            <CricketProvider>
-              <PlayerLayout />
-            </CricketProvider>
-          </AuthProvider>
-        ),
-        children: [
-          { path: 'dashboard', element: <PlayerDashboard /> },
-          { path: 'profile', element: <PlayerProfile /> },
-          { path: 'history', element: <PlayerHistory /> },
-          { path: 'stats', element: <PlayerStats /> },
-        ],
-      },
-    ],
-  },
 
   // Fallback
   { path: '*', element: <Navigate to="/" replace /> },
