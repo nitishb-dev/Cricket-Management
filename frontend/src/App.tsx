@@ -1,7 +1,5 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CricketProvider } from './context/CricketContext';
 import { AdminLogin } from './components/AdminLogin';
 import MainLayout from './MainLayout';
 import { Dashboard } from './components/Dashboard';
@@ -12,35 +10,28 @@ import { MatchHistory } from './components/MatchHistory';
 import { PlayerStats } from './components/PlayerStats';
 import { PlayerLogin } from './components/PlayerLogin';
 import LoginChoice from './components/LoginChoice';
-import PlayerDashboard from './components/PlayerDashboard'; // Keep this import
+import PlayerDashboard from './components/PlayerDashboard';
 import PlayerHistory from './components/PlayerHistory';
 import PlayerLayout from './PlayerLayout';
 import PlayerProfile from './components/PlayerProfile';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 const router = createBrowserRouter([
-  // Public login choice and auth routes
-  {
-    path: '/',
-    element: <LoginChoice />,
-  },
-  {
-    path: '/admin-login',
-    element: <AdminLogin />,
-  },
-  {
-    path: '/player-login',
-    element: <PlayerLogin />,
-  },
-
-  // New protected admin area sits under /app/*
+  { path: '/', element: <LoginChoice /> },
+  { path: '/admin-login', element: <AdminLogin /> },
+  { path: '/player-login', element: <PlayerLogin /> },
   {
     path: '/app',
     element: <ProtectedRoute />,
     children: [
       {
-        element: <MainLayout />, // MainLayout and its children now have access to the contexts
+        element: (
+          <AuthProvider>
+            <MainLayout />
+          </AuthProvider>
+        ),
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <Dashboard /> },
@@ -58,7 +49,11 @@ const router = createBrowserRouter([
     element: <PlayerProtectedRoute />,
     children: [
       {
-        element: <PlayerLayout />, // PlayerLayout and its children now have access to the contexts
+        element: (
+          <AuthProvider>
+            <PlayerLayout />
+          </AuthProvider>
+        ),
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <PlayerDashboard /> },
@@ -69,25 +64,12 @@ const router = createBrowserRouter([
       },
     ],
   },
-  // Backwards-compatible redirects from legacy routes -> new /app/* routes
-  { path: '/dashboard', element: <Navigate to="/app/dashboard" replace /> },
-  { path: '/players', element: <Navigate to="/app/players" replace /> },
-  { path: '/new-match', element: <Navigate to="/app/new-match" replace /> },
-  { path: '/play-match', element: <Navigate to="/app/play-match" replace /> },
-  { path: '/history', element: <Navigate to="/app/history" replace /> },
-  { path: '/stats', element: <Navigate to="/app/stats" replace /> },
-
-  // Fallback
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <LoginChoice /> },
 ]);
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <CricketProvider>
-        <RouterProvider router={router} />
-      </CricketProvider>
-    </AuthProvider>
+    <RouterProvider router={router} />
   );
 };
 
