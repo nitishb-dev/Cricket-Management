@@ -560,18 +560,6 @@ Potential additions for further development:
 - **Social Features** - Player interactions and messaging
 - **Payment Integration** - Subscription management for clubs
 
-## 🤝 **Contributing**
-
-This project demonstrates modern full-stack development with AI assistance. Feel free to:
-- Fork the repository
-- Submit pull requests
-- Report issues
-- Suggest enhancements
-
-## 📄 **License**
-
-This project is open source and available under the [MIT License](LICENSE).
-
 ---
 
 **Built with ❤️ using AI-augmented development**  
