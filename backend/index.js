@@ -37,9 +37,15 @@ const corsOptions = {
     if (origin && allowedOrigins.includes(origin.replace(/\/$/, ""))) {
       callback(null, true);
     } else {
+      // Log the rejected origin for debugging
+      console.log(`🚫 CORS rejected origin: ${origin}`);
+      console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
       callback(new Error("Not allowed by CORS"));
     }
   },
+  credentials: true, // Allow credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Super-Admin-Key']
 };
 
 app.use(cors(corsOptions));
