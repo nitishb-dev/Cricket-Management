@@ -111,3 +111,7 @@ Thumbs.db
 test-results/
 playwright-report/
 test-results.xml
+
+DEPLOYMENT_SECURITY_GUIDE.md
+JWT_USAGE_REFERENCE.md
+SETUP_GUIDE.md

@@ -8,7 +8,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "init-db": "node db-setup.js"
+    "init-db": "node db-setup.js",
+    "reset-super-admin": "node reset-super-admin-password.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",

@@ -167,6 +167,8 @@ cd ../backend && npm install
 2. **Create a Supabase project** at [supabase.com](https://supabase.com)
 3. **Get your credentials** from Project Settings → API/Database
 
+> **Note**: The `.env` files are not included in the repository for security. You must create them from the `.env.example` templates and add your own credentials.
+
 ### **3. Environment Configuration** ⚙️
 
 **Backend (`backend/.env`):**

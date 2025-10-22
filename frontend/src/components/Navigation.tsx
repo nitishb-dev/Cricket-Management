@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { LayoutDashboard, Users, PlusSquare, History, BarChart3, LogOut, User } from 'lucide-react'
+import { LayoutDashboard, Users, PlusSquare, History, BarChart3, LogOut, User, Settings } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -11,6 +11,7 @@ const navConfig = {
   history: { icon: History, label: 'History' },
   stats: { icon: BarChart3, label: 'Statistics' },
   profile: { icon: User, label: 'Profile' },
+  settings: { icon: Settings, label: 'Settings' },
   logout: { icon: LogOut, label: 'Logout' }
 }
 
@@ -19,7 +20,7 @@ interface NavigationProps {
   role?: 'admin' | 'player'
 }
 
-type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats' | 'profile'
+type ActiveView = 'dashboard' | 'players' | 'new-match' | 'play-match' | 'history' | 'stats' | 'profile' | 'settings'
 
 const adminNavItems: ActiveView[] = ['dashboard', 'players', 'new-match', 'history', 'stats']
 const playerNavItems: ActiveView[] = ['dashboard', 'history', 'stats']
@@ -115,6 +116,15 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                         className="dropdown-item w-full flex items-center gap-2 px-4"
                       >
                         <User size={16} /> Edit Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/player/settings')
+                          setMenuOpen(false)
+                        }}
+                        className="dropdown-item w-full flex items-center gap-2 px-4"
+                      >
+                        <Settings size={16} /> Settings
                       </button>
                     </>
                   )}
@@ -215,6 +225,15 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                           className="dropdown-item w-full flex items-center gap-2 px-4"
                         >
                           <User size={16} /> Edit Profile
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/player/settings')
+                            setMenuOpen(false)
+                          }}
+                          className="dropdown-item w-full flex items-center gap-2 px-4"
+                        >
+                          <Settings size={16} /> Settings
                         </button>
                       </>
                     )}

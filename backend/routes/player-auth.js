@@ -66,6 +66,7 @@ router.post("/login", async (req, res, next) => {
         username,
         password_hash,
         club_id,
+        must_change_password,
         clubs (
           id,
           name
@@ -94,7 +95,8 @@ router.post("/login", async (req, res, next) => {
         playerId: player.id,
         clubId: player.club_id,
         username: player.username,
-        role: 'player'
+        role: 'player',
+        mustChangePassword: player.must_change_password
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
@@ -108,7 +110,8 @@ router.post("/login", async (req, res, next) => {
         username: player.username,
         clubId: player.club_id,
         clubName: player.clubs.name
-      }
+      },
+      mustChangePassword: player.must_change_password
     });
 
   } catch (err) {
@@ -391,6 +394,68 @@ router.post("/profile/picture", authenticatePlayerToken, upload.single('profileP
     res.status(500).json({ 
       error: "Failed to upload profile picture. Please try again or contact support." 
     });
+  }
+});
+
+// Change player's own password
+router.post("/change-password", authenticatePlayerToken, async (req, res, next) => {
+  try {
+    const { playerId, clubId } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ error: "New password is required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters long" });
+    }
+
+    // Get current player data
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("password_hash, must_change_password")
+      .eq("id", playerId)
+      .eq("club_id", clubId)
+      .single();
+
+    if (playerError || !player) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    // If not first-time password change, verify current password
+    if (!player.must_change_password && currentPassword) {
+      const isValidPassword = await bcrypt.compare(currentPassword, player.password_hash);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear must_change_password flag
+    const { data: updatedPlayer, error: updateError } = await supabase
+      .from("players")
+      .update({ 
+        password_hash: newPasswordHash,
+        must_change_password: false,
+        last_password_change: new Date().toISOString()
+      })
+      .eq("id", playerId)
+      .eq("club_id", clubId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({ 
+      message: "Password changed successfully",
+      mustChangePassword: false
+    });
+
+  } catch (err) {
+    next(err);
   }
 });
 

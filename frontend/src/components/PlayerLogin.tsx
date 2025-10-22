@@ -33,10 +33,17 @@ export const PlayerLogin: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const success = await loginPlayer(username.trim(), password);
-      if (!success) {
+      const result = await loginPlayer(username.trim(), password);
+      if (!result.success) {
         setError('Invalid username or password.');
         setIsLoading(false);
+        return;
+      }
+
+      // Check if password change is required
+      if (result.mustChangePassword) {
+        setIsLoading(false);
+        navigate('/player/change-password', { replace: true });
         return;
       }
 

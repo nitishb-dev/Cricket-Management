@@ -117,10 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return false;
   };
 
-  const loginPlayer = async (username: string, pass: string): Promise<boolean> => {
+  const loginPlayer = async (username: string, pass: string): Promise<{ success: boolean; mustChangePassword?: boolean }> => {
     if (!API_BASE_URL) {
       console.warn('API_BASE_URL not configured; player login unavailable');
-      return false;
+      return { success: false };
     }
 
     const normalizedUsername = sanitizeUsername(username);
@@ -134,25 +134,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!res.ok) {
         console.warn(`[auth] player login failed: status=${res.status}`);
-        return false;
+        return { success: false };
       }
 
       const data = await res.json();
 
-      // expected: { token, user: { id, name, username } }
+      // Store auth data
       sessionStorage.setItem('playerToken', data.token);
       sessionStorage.setItem('authUser', data.user.name);
       sessionStorage.setItem('authRole', 'player');
       sessionStorage.setItem('authUserId', data.user.id);
+      sessionStorage.setItem('mustChangePassword', data.mustChangePassword ? 'true' : 'false');
+      
       setIsAuthenticated(true);
       setUser(data.user.name);
       setRole('player');
       setUserId(data.user.id);
       setToken(data.token);
-      return true;
+      
+      return { 
+        success: true, 
+        mustChangePassword: data.mustChangePassword 
+      };
     } catch (err) {
       console.error('player login error', err);
-      return false;
+      return { success: false };
     }
   };
 

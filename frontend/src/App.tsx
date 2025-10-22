@@ -19,6 +19,13 @@ import PlayerProfile from './components/PlayerProfile';
 import { EditProfilePage } from './components/EditProfilePage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
+import { SuperAdminLogin } from './components/SuperAdminLogin';
+import { SuperAdminDashboard } from './components/SuperAdminDashboard';
+import { SuperAdminSettings } from './components/SuperAdminSettings';
+import { PlayerPasswordChange } from './components/PlayerPasswordChange';
+import { PlayerSettings } from './components/PlayerSettings';
+import { ClubDetails } from './components/ClubDetails';
+import { SuperAdminProtectedRoute } from './components/SuperAdminProtectedRoute';
 
 const App: React.FC = () => {
   return (
@@ -48,8 +55,39 @@ const App: React.FC = () => {
                 <Route path="edit-profile" element={<EditProfilePage />} />
                 <Route path="history" element={<PlayerHistory />} />
                 <Route path="stats" element={<PlayerStats />} />
+                <Route path="settings" element={<PlayerSettings />} />
               </Route>
             </Route>
+            {/* Player Password Change - Special route */}
+            <Route path="/player/change-password" element={
+              <PlayerPasswordChange 
+                isFirstTime={true} 
+                onSuccess={() => window.location.href = '/player/dashboard'} 
+              />
+            } />
+            {/* Super Admin Routes - Protected and Hidden */}
+            <Route path="/super-admin-login" element={
+              <SuperAdminProtectedRoute>
+                <SuperAdminLogin />
+              </SuperAdminProtectedRoute>
+            } />
+            <Route path="/super-admin/dashboard" element={
+              <SuperAdminProtectedRoute>
+                <SuperAdminDashboard />
+              </SuperAdminProtectedRoute>
+            } />
+            <Route path="/super-admin/settings" element={
+              <SuperAdminProtectedRoute>
+                <SuperAdminSettings />
+              </SuperAdminProtectedRoute>
+            } />
+            <Route path="/club/:clubId" element={
+              <SuperAdminProtectedRoute>
+                <ClubDetails />
+              </SuperAdminProtectedRoute>
+            } />
+            {/* Redirect /super-admin to /super-admin-login */}
+            <Route path="/super-admin" element={<Navigate to="/super-admin-login" replace />} />
             <Route path="*" element={<LoginChoice />} />
           </Routes>
         </CricketProvider>

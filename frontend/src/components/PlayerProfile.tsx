@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { User, Calendar, Shield, Hash, Globe, Cake } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { usePlayerApi } from '../context/usePlayerApi';
 import { PlayerAvatar } from './PlayerAvatar';
 
@@ -48,6 +49,7 @@ const InfoCard: React.FC<{ title: string; value: string | React.ReactNode; icon:
 );
 
 export const PlayerProfile: React.FC = () => {
+  const navigate = useNavigate();
   const { apiFetch, userId } = usePlayerApi();
   const [profile, setProfile] = useState<PlayerProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,6 +163,23 @@ export const PlayerProfile: React.FC = () => {
             value={profile.totalMatches > 0 ? 'Active Player' : 'New Player'} 
             icon={User} 
           />
+        </div>
+      </div>
+
+      {/* Security Settings */}
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Security Settings</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-semibold text-gray-800">Password & Account Settings</h4>
+            <p className="text-sm text-gray-600">Manage your password and account preferences</p>
+          </div>
+          <button
+            onClick={() => navigate('/player/settings')}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            Go to Settings
+          </button>
         </div>
       </div>
     </div>

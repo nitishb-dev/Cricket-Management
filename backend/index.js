@@ -6,6 +6,9 @@ import authRoutes from "./routes/auth.js";
 import playerRoutes from "./routes/players.js";
 import matchRoutes from "./routes/matches.js";
 import playerAuthRoutes from "./routes/player-auth.js";
+import superAdminAuthRoutes from "./routes/super-admin-auth.js";
+import superAdminRoutes from "./routes/super-admin.js";
+import { hideSuperAdminRoutes, superAdminSecurityCheck } from "./middleware/superAdminSecurity.js";
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +55,22 @@ app.get("/api/health", (req, res) => {
 // Authentication routes (public)
 app.use("/api/auth", authRoutes);
 app.use("/api/player", playerAuthRoutes);
+
+// Super Admin routes (with security middleware)
+app.use("/api/super-admin", hideSuperAdminRoutes);
+
+// Simple test endpoint for super admin security
+app.get("/api/super-admin/test", superAdminSecurityCheck, (req, res) => {
+  res.json({ message: "Super admin security is working!", timestamp: new Date() });
+});
+
+// Access key verification endpoint (no auth required, just key check)
+app.get("/api/super-admin/verify-access", superAdminSecurityCheck, (req, res) => {
+  res.json({ message: "Access key verified successfully", timestamp: new Date() });
+});
+
+app.use("/api/super-admin/auth", superAdminAuthRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 // Protected routes (require authentication)
 app.use("/api/players", playerRoutes);

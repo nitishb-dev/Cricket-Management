@@ -61,7 +61,9 @@ router.post("/", async (req, res, next) => {
         name, 
         club_id: clubId,
         username,
-        password_hash: passwordHash
+        password_hash: passwordHash,
+        must_change_password: true,
+        last_password_change: new Date().toISOString()
       })
       .select()
       .single();
