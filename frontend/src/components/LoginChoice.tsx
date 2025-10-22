@@ -7,6 +7,17 @@ const LoginChoice: React.FC = () => {
   const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
 
+  // Redirect authenticated users to their respective dashboards
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      if (role === 'admin') {
+        navigate('/app/dashboard', { replace: true });
+      } else if (role === 'player') {
+        navigate('/player/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, role, navigate]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 text-center">

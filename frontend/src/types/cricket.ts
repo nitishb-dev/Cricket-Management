@@ -2,6 +2,7 @@ export interface Player {
   id: string // Change to string
   name: string
   created_at: string
+  profilePictureUrl?: string | null
 }
 
 export interface Match {

@@ -165,7 +165,7 @@ export const Dashboard: React.FC = () => {
                 Start your cricket journey by creating your first match. Track scores, manage teams, and build your cricket legacy.
               </p>
               <button
-                onClick={() => navigate('/new-match')}
+                onClick={() => navigate('/app/new-match')}
                 className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 <Play size={18} />

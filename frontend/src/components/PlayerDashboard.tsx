@@ -4,6 +4,7 @@ import { BarChart3, Target, GitCommit, Trophy, Award, User, History, RefreshCw }
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import dayjs from 'dayjs';
 import { usePlayerApi } from '../context/usePlayerApi';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface PlayerDashboardStats {
   player: { id: string; name: string };
@@ -12,7 +13,22 @@ interface PlayerDashboardStats {
   totalMatches: number;
   totalWins: number;
   manOfMatchCount: number;
-};
+}
+
+interface PlayerProfileData {
+  id: string;
+  name: string;
+  username: string;
+  clubId: string;
+  clubName: string;
+  joinedAt: string;
+  dateOfBirth?: string | null;
+  country?: string | null;
+  profilePictureUrl?: string | null;
+  totalMatches: number;
+  firstMatchDate?: string | null;
+  teamsPlayedFor: string[];
+}
 
 type MatchHistoryEntry = {
   id: string;
@@ -42,6 +58,7 @@ const PlayerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { apiFetch, userId } = usePlayerApi();
   const [stats, setStats] = useState<PlayerDashboardStats | null>(null);
+  const [profile, setProfile] = useState<PlayerProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +68,14 @@ const PlayerDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [statsData, historyData] = await Promise.all([
-        apiFetch<PlayerDashboardStats>(`/players/stats/${userId}`),
-        apiFetch<MatchHistoryEntry[]>(`/players/${userId}/history?limit=5`)
+      const [statsData, profileData, historyData] = await Promise.all([
+        apiFetch<PlayerDashboardStats>(`/player/detailed-stats`),
+        apiFetch<PlayerProfileData>(`/player/profile`),
+        apiFetch<MatchHistoryEntry[]>(`/player/history?limit=5`)
       ]);
 
       setStats(statsData ?? null);
+      setProfile(profileData ?? null);
       setHistory(historyData ?? []);
 
     } catch (err) {
@@ -91,27 +110,34 @@ const PlayerDashboard: React.FC = () => {
     .slice()
     .reverse()
     .map((h) => ({
-      name: dayjs(h.matches?.match_date).format('MMM DD'),
+      name: h.matches?.match_date ? dayjs(h.matches.match_date).format('MMM DD') : 'N/A',
       runs: h.runs,
     }));
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="card p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-            <User size={40} className="text-gray-400" />
+      <div className="card p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto">
+            <PlayerAvatar 
+              profilePictureUrl={profile?.profilePictureUrl} 
+              name={user || 'Player'} 
+              size="2xl"
+            />
+            <div className="text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Welcome, {user}!</h1>
+              <p className="text-base sm:text-lg text-gray-600">Here's your performance snapshot.</p>
+              {profile?.clubName && (
+                <p className="text-sm text-gray-500 mt-1">{profile.clubName}</p>
+              )}
+            </div>
           </div>
-          <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-gray-800">Welcome, {user}!</h1>
-            <p className="text-lg text-gray-600">Here's your performance snapshot.</p>
-          </div>
+          <button onClick={fetchData} className="btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center" disabled={loading}>
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
         </div>
-        <button onClick={fetchData} className="btn-secondary flex items-center gap-2" disabled={loading}>
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
       </div>
 
       {/* Career Stats */}
@@ -164,7 +190,9 @@ const PlayerDashboard: React.FC = () => {
                   <div key={h.id} className={`p-4 border-l-4 rounded-r-lg ${resultColor} flex flex-col sm:flex-row items-center justify-between gap-4`}>
                     <div>
                       <div className="font-semibold text-gray-800">{match.team_a_name} vs {match.team_b_name}</div>
-                      <div className="text-sm text-gray-500">{dayjs(match.match_date).format('MMM DD, YYYY')}</div>
+                      <div className="text-sm text-gray-500">
+                        {match.match_date ? dayjs(match.match_date).format('MMM DD, YYYY') : 'Date not available'}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 text-center">
                       <div>

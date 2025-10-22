@@ -33,7 +33,7 @@ const PlayerHistory: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<MatchEntry[]>(`/players/${userId}/history`);
+      const data = await apiFetch<MatchEntry[]>(`/player/history`);
       setHistory(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load history');

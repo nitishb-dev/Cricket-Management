@@ -6,10 +6,13 @@ interface AuthContextType {
   user: string | null;
   role: 'admin' | 'player' | null;
   token?: string | null;
-  userId?: string | null; // <-- added
+  userId?: string | null;
+  clubId?: string | null;
+  clubName?: string | null;
   login: (user: string, pass: string) => boolean;
   loginPlayer?: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  checkAuthStatus: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,46 +48,13 @@ function sanitizeUsername(raw: string) {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('isAuthenticated') === 'true'
-      || !!sessionStorage.getItem('playerToken');
-  });
-
-  const [user, setUser] = useState<string | null>(() => {
-    return sessionStorage.getItem('authUser') || null;
-  });
-
-  // restore role safely (only allow 'admin' | 'player')
-  const [role, setRole] = useState<'admin' | 'player' | null>(() => {
-    const r = sessionStorage.getItem('authRole');
-    return r === 'admin' || r === 'player' ? (r as 'admin' | 'player') : null;
-  });
-
-  const [userId, setUserId] = useState<string | null>(() => {
-    return sessionStorage.getItem('authUserId') || null;
-  });
-
-  const [token, setToken] = useState<string | null>(() => {
-    return sessionStorage.getItem('playerToken') || null;
-  });
-
-  const login = (userName: string, pass: string): boolean => {
-    // Compare against environment-driven credentials
-    if (userName === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      setUser(userName);
-      setRole('admin');
-      setToken(null);
-      setUserId(null);
-      sessionStorage.setItem('isAuthenticated', 'true');
-      sessionStorage.setItem('authUser', userName);
-      sessionStorage.setItem('authRole', 'admin');
-      sessionStorage.removeItem('playerToken');
-      sessionStorage.removeItem('authUserId');
-      return true;
-    }
-    return false;
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<string | null>(null);
+  const [role, setRole] = useState<'admin' | 'player' | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [clubId, setClubId] = useState<string | null>(null);
+  const [clubName, setClubName] = useState<string | null>(null);
 
   const logout = useCallback((): void => {
     setIsAuthenticated(false);
@@ -92,6 +62,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRole(null);
     setToken(null);
     setUserId(null);
+    setClubId(null);
+    setClubName(null);
+    
+    // Clear all auth data
+    localStorage.removeItem('cricket_admin_token');
+    localStorage.removeItem('cricket_admin_data');
     sessionStorage.removeItem('isAuthenticated');
     sessionStorage.removeItem('authUser');
     sessionStorage.removeItem('authRole');
@@ -99,10 +75,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem('authUserId');
   }, []);
 
-  const loginPlayer = async (username: string, pass: string): Promise<boolean> => {
+  // Check authentication status on app load
+  const checkAuthStatus = useCallback(() => {
+    const adminToken = localStorage.getItem('cricket_admin_token');
+    const adminData = localStorage.getItem('cricket_admin_data');
+    const playerToken = sessionStorage.getItem('playerToken');
+    const playerUser = sessionStorage.getItem('authUser');
+    const playerUserId = sessionStorage.getItem('authUserId');
+
+    if (adminToken && adminData) {
+      try {
+        const admin = JSON.parse(adminData);
+        setIsAuthenticated(true);
+        setUser(admin.adminName);
+        setRole('admin');
+        setToken(adminToken);
+        setUserId(admin.id);
+        setClubId(admin.clubId);
+        setClubName(admin.clubName);
+      } catch (error) {
+        console.error('Failed to parse admin data:', error);
+        logout();
+      }
+    } else if (playerToken && playerUser && playerUserId) {
+      setIsAuthenticated(true);
+      setUser(playerUser);
+      setRole('player');
+      setToken(playerToken);
+      setUserId(playerUserId);
+    }
+  }, [logout]);
+
+  // Initialize auth status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  const login = (userName: string, pass: string): boolean => {
+    // This is kept for backward compatibility but not used in multi-tenant setup
+    // The actual login happens in AdminLogin component
+    return false;
+  };
+
+  const loginPlayer = async (username: string, pass: string): Promise<{ success: boolean; mustChangePassword?: boolean }> => {
     if (!API_BASE_URL) {
       console.warn('API_BASE_URL not configured; player login unavailable');
-      return false;
+      return { success: false };
     }
 
     const normalizedUsername = sanitizeUsername(username);
@@ -116,25 +134,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!res.ok) {
         console.warn(`[auth] player login failed: status=${res.status}`);
-        return false;
+        return { success: false };
       }
 
       const data = await res.json();
 
-      // expected: { token, user: { id, name, username } }
+      // Store auth data
       sessionStorage.setItem('playerToken', data.token);
       sessionStorage.setItem('authUser', data.user.name);
       sessionStorage.setItem('authRole', 'player');
       sessionStorage.setItem('authUserId', data.user.id);
+      sessionStorage.setItem('mustChangePassword', data.mustChangePassword ? 'true' : 'false');
+      
       setIsAuthenticated(true);
       setUser(data.user.name);
       setRole('player');
       setUserId(data.user.id);
       setToken(data.token);
-      return true;
+      
+      return { 
+        success: true, 
+        mustChangePassword: data.mustChangePassword 
+      };
     } catch (err) {
       console.error('player login error', err);
-      return false;
+      return { success: false };
     }
   };
 
@@ -170,9 +194,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     role,
     token,
     userId,
+    clubId,
+    clubName,
     login,
     loginPlayer,
-    logout
+    logout,
+    checkAuthStatus
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

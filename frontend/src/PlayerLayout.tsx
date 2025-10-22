@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 
-type ActiveView = 'dashboard' | 'history' | 'stats' | 'profile';
+type ActiveView = 'dashboard' | 'history' | 'stats' | 'profile' | 'settings';
 
 const PlayerLayout: React.FC = () => {
   const location = useLocation();
@@ -10,7 +10,7 @@ const PlayerLayout: React.FC = () => {
   // Derive active view from the URL path for the player section
   const activeView = useMemo(() => {
     const path = location.pathname.split('/').pop() || 'dashboard';
-    const validViews: ActiveView[] = ['dashboard', 'history', 'stats', 'profile'];
+    const validViews: ActiveView[] = ['dashboard', 'history', 'stats', 'profile', 'settings'];
     if (validViews.includes(path as ActiveView)) {
       return path as ActiveView;
     }
