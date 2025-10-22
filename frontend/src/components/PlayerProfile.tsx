@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { User, Calendar, Shield, Hash, Globe, Cake } from 'lucide-react';
 import { usePlayerApi } from '../context/usePlayerApi';
+import { PlayerAvatar } from './PlayerAvatar';
 
 
 interface PlayerProfileData {
@@ -12,6 +13,7 @@ interface PlayerProfileData {
   joinedAt: string;
   dateOfBirth: string | null;
   country: string | null;
+  profilePictureUrl: string | null;
   totalMatches: number;
   firstMatchDate: string | null;
   teamsPlayedFor: string[];
@@ -91,13 +93,19 @@ export const PlayerProfile: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Player Header */}
-      <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-        <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
-          <User size={64} className="text-gray-400" />
+      <div className="card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+        <div className="border-4 border-white shadow-lg rounded-full">
+          <PlayerAvatar 
+            profilePictureUrl={profile.profilePictureUrl} 
+            name={profile.name} 
+            size="2xl"
+            className="w-28 h-28 sm:w-32 sm:h-32"
+          />
         </div>
         <div className="text-center sm:text-left">
-          <h1 className="text-4xl font-bold text-gray-800">{profile.name}</h1>
-          <p className="text-lg text-gray-600">Player Profile</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">{profile.name}</h1>
+          <p className="text-base sm:text-lg text-gray-600">Player Profile</p>
+          <p className="text-sm text-gray-500 mt-1">{profile.clubName}</p>
         </div>
       </div>
 

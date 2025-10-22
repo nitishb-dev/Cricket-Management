@@ -156,10 +156,16 @@ cd frontend && npm install
 cd ../backend && npm install
 ```
 
-### **2. Database Setup** 🗄️
-1. Create a **Supabase project** at [supabase.com](https://supabase.com)
-2. Get your **Database URL** from Project Settings → Database
-3. The multi-tenant schema will be **automatically created**
+### **2. Environment Setup** 🔧
+
+1. **Copy environment files**:
+   ```bash
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   ```
+
+2. **Create a Supabase project** at [supabase.com](https://supabase.com)
+3. **Get your credentials** from Project Settings → API/Database
 
 ### **3. Environment Configuration** ⚙️
 

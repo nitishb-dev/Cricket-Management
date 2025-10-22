@@ -1,9 +1,26 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { supabase } from "../db.js";
+import multer from "multer";
+import { supabase, PROFILE_PICTURES_BUCKET } from "../db.js";
 
 const router = Router();
+
+// Configure multer for memory storage (we'll upload to Supabase)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  },
+});
 
 // Verify Token (middleware for player protected routes)
 export const authenticatePlayerToken = (req, res, next) => {
@@ -115,6 +132,7 @@ router.get("/profile", authenticatePlayerToken, async (req, res, next) => {
         created_at,
         date_of_birth,
         country,
+        profile_picture_url,
         clubs (
           id,
           name
@@ -154,6 +172,7 @@ router.get("/profile", authenticatePlayerToken, async (req, res, next) => {
       joinedAt: player.created_at,
       dateOfBirth: player.date_of_birth,
       country: player.country,
+      profilePictureUrl: player.profile_picture_url,
       totalMatches,
       firstMatchDate,
       teamsPlayedFor
@@ -310,6 +329,71 @@ router.get("/detailed-stats", authenticatePlayerToken, async (req, res, next) =>
   }
 });
 
+// Upload profile picture
+router.post("/profile/picture", authenticatePlayerToken, upload.single('profilePicture'), async (req, res, next) => {
+  try {
+    const { playerId, clubId } = req.user;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+
+    // Generate unique filename
+    const fileExtension = req.file.originalname.split('.').pop();
+    const fileName = `${clubId}/${playerId}-${Date.now()}.${fileExtension}`;
+
+    try {
+      // Try Supabase Storage first
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(PROFILE_PICTURES_BUCKET)
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from(PROFILE_PICTURES_BUCKET)
+        .getPublicUrl(fileName);
+
+      var profilePictureUrl = urlData.publicUrl;
+
+    } catch (storageError) {
+      console.error('Supabase Storage error:', storageError);
+      console.log('Using base64 fallback for profile picture...');
+      
+      // Fallback: Store as base64 (works without storage configuration)
+      var profilePictureUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+
+    // Update player record with new profile picture URL
+    const { data: updatedPlayer, error: updateError } = await supabase
+      .from("players")
+      .update({ profile_picture_url: profilePictureUrl })
+      .eq("id", playerId)
+      .eq("club_id", clubId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({
+      message: "Profile picture updated successfully",
+      profilePictureUrl: profilePictureUrl
+    });
+
+  } catch (err) {
+    console.error('Profile picture upload error:', err);
+    res.status(500).json({ 
+      error: "Failed to upload profile picture. Please try again or contact support." 
+    });
+  }
+});
+
 // Update player's own profile (DOB and Country)
 router.put("/profile", authenticatePlayerToken, async (req, res, next) => {
   try {
@@ -359,6 +443,7 @@ router.put("/profile", authenticatePlayerToken, async (req, res, next) => {
         created_at,
         date_of_birth,
         country,
+        profile_picture_url,
         clubs (
           id,
           name
@@ -394,6 +479,7 @@ router.put("/profile", authenticatePlayerToken, async (req, res, next) => {
       joinedAt: updatedPlayer.created_at,
       dateOfBirth: updatedPlayer.date_of_birth,
       country: updatedPlayer.country,
+      profilePictureUrl: updatedPlayer.profile_picture_url,
       totalMatches,
       firstMatchDate,
       teamsPlayedFor

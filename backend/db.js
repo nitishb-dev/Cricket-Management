@@ -10,4 +10,13 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Supabase URL and service role key are required.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Create client with service role for admin operations (including storage)
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+// Storage bucket name for profile pictures
+export const PROFILE_PICTURES_BUCKET = 'profile-pictures';

@@ -89,12 +89,15 @@ const SCHEMA_SQL = `
       ALTER TABLE players ADD CONSTRAINT players_username_club_id_key UNIQUE(username, club_id);
     END IF;
     
-    -- Add profile fields for players (DOB and Country)
+    -- Add profile fields for players (DOB, Country, and Profile Picture)
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='players' AND column_name='date_of_birth') THEN
       ALTER TABLE players ADD COLUMN date_of_birth DATE;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='players' AND column_name='country') THEN
       ALTER TABLE players ADD COLUMN country TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='players' AND column_name='profile_picture_url') THEN
+      ALTER TABLE players ADD COLUMN profile_picture_url TEXT;
     END IF;
   END $$;
 

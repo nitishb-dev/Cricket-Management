@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, Calendar, Globe, Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { usePlayerApi } from '../context/usePlayerApi';
+import { useAuth } from '../context/AuthContext';
+import { ProfilePictureUpload } from './ProfilePictureUpload';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface PlayerProfileData {
   id: string;
@@ -11,6 +14,7 @@ interface PlayerProfileData {
   joinedAt: string;
   dateOfBirth: string | null;
   country: string | null;
+  profilePictureUrl: string | null;
   totalMatches: number;
   firstMatchDate: string | null;
   teamsPlayedFor: string[];
@@ -23,8 +27,10 @@ interface EditProfileProps {
 
 export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
   const { apiFetch } = usePlayerApi();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
@@ -49,6 +55,45 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
 
     loadProfile();
   }, [apiFetch]);
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/player/profile/picture`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+
+      const result = await response.json();
+      
+      // Update profile with new image URL
+      if (profile) {
+        const updatedProfile = { ...profile, profilePictureUrl: result.profilePictureUrl };
+        setProfile(updatedProfile);
+        onSave(updatedProfile);
+      }
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,11 +168,13 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
 
         {/* Player Info (Read-only) */}
         <div className="bg-gray-50 p-4 rounded-xl mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-              <User size={32} className="text-gray-400" />
-            </div>
-            <div>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <PlayerAvatar 
+              profilePictureUrl={profile.profilePictureUrl} 
+              name={profile.name} 
+              size="xl"
+            />
+            <div className="text-center sm:text-left">
               <h2 className="text-xl font-semibold text-gray-800">{profile.name}</h2>
               <p className="text-gray-600">@{profile.username}</p>
               <p className="text-sm text-gray-500">{profile.clubName}</p>
@@ -150,6 +197,13 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
             <span className="text-sm">{error}</span>
           </div>
         )}
+
+        {/* Profile Picture Upload */}
+        <ProfilePictureUpload
+          currentImageUrl={profile.profilePictureUrl}
+          onImageUpload={handleImageUpload}
+          loading={uploadingImage}
+        />
 
         {/* Edit Form */}
         <form onSubmit={handleSave} className="space-y-6">
@@ -193,7 +247,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingImage}
               className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
@@ -212,7 +266,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
             <button
               type="button"
               onClick={onBack}
-              disabled={saving}
+              disabled={saving || uploadingImage}
               className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel

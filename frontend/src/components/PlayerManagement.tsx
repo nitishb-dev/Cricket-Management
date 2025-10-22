@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { User, Plus, Search, AlertCircle, Trash2, Edit, Save, XCircle, KeyRound, Copy, Check } from 'lucide-react'
 import { useCricket } from '../context/CricketContext'
 import { Player } from '../types/cricket'
+import { PlayerAvatar } from './PlayerAvatar'
 
 interface PlayerManagementProps {
   selectedPlayers?: Player[]
@@ -353,14 +354,15 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                       <div className="relative p-4 sm:p-5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg
-                              ${selected
-                                ? 'bg-green-500 text-white'
-                                : disabled
-                                  ? 'bg-gray-300 text-gray-500'
-                                  : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                              }`}>
-                              {player.name.charAt(0).toUpperCase()}
+                            <div className="relative">
+                              <PlayerAvatar 
+                                profilePictureUrl={player.profilePictureUrl} 
+                                name={player.name} 
+                                size="md"
+                              />
+                              {selected && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                              )}
                             </div>
                             <div>
                               <h3 className={`font-semibold text-lg ${disabled ? 'line-through' : ''}`}>

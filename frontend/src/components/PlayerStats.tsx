@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { usePlayerApi } from '../context/usePlayerApi'
 import { PlayerStats as CricketPlayerStats } from '../types/cricket'
 import { StatCard } from './StatCard'
+import { PlayerAvatar } from './PlayerAvatar'
 
 interface DetailedPlayerStats {
   player: { id: string; name: string };
@@ -26,6 +27,21 @@ interface DetailedPlayerStats {
   recentMatches: any[];
 }
 
+interface PlayerProfileData {
+  id: string;
+  name: string;
+  username: string;
+  clubId: string;
+  clubName: string;
+  joinedAt: string;
+  dateOfBirth?: string | null;
+  country?: string | null;
+  profilePictureUrl?: string | null;
+  totalMatches: number;
+  firstMatchDate?: string | null;
+  teamsPlayedFor: string[];
+}
+
 export const PlayerStats: React.FC = () => {
   const { getAllPlayerStats, loading } = useCricket()
   const { role, userId } = useAuth()
@@ -38,6 +54,7 @@ export const PlayerStats: React.FC = () => {
 
   // State for player view (single player)
   const [myStats, setMyStats] = useState<DetailedPlayerStats | null>(null);
+  const [myProfile, setMyProfile] = useState<PlayerProfileData | null>(null);
   const [myStatsLoading, setMyStatsLoading] = useState(true);
   const [myStatsError, setMyStatsError] = useState<string | null>(null);
 
@@ -67,9 +84,12 @@ export const PlayerStats: React.FC = () => {
       setMyStatsLoading(true);
       setMyStatsError(null);
       try {
-        // Use the centralized apiFetch hook which correctly builds the URL
-        const data = await apiFetch<DetailedPlayerStats>(`/player/detailed-stats`);
-        setMyStats(data);
+        const [statsData, profileData] = await Promise.all([
+          apiFetch<DetailedPlayerStats>(`/player/detailed-stats`),
+          apiFetch<PlayerProfileData>(`/player/profile`)
+        ]);
+        setMyStats(statsData);
+        setMyProfile(profileData);
       } catch (err) {
         setMyStatsError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -124,13 +144,18 @@ export const PlayerStats: React.FC = () => {
     return (
       <div className="space-y-8">
         {/* Header */}
-        <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
-            <User size={48} className="text-gray-400" />
-          </div>
+        <div className="card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <PlayerAvatar 
+            profilePictureUrl={myProfile?.profilePictureUrl} 
+            name={myStats.player.name} 
+            size="2xl"
+          />
           <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
-            <p className="text-lg text-gray-600">Your Career Statistics</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{myStats.player.name}</h1>
+            <p className="text-base sm:text-lg text-gray-600">Your Career Statistics</p>
+            {myProfile?.clubName && (
+              <p className="text-sm text-gray-500 mt-1">{myProfile.clubName}</p>
+            )}
           </div>
         </div>
 
