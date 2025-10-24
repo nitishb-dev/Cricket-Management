@@ -24,10 +24,67 @@ const isIPAllowed = (clientIP) => {
   // In development, allow localhost
   if (process.env.NODE_ENV === 'development') {
     const devIPs = ['127.0.0.1', '::1', 'localhost'];
-    return devIPs.some(ip => clientIP.includes(ip)) || allowedIPs.includes(clientIP);
+    return devIPs.some(ip => clientIP.includes(ip)) || checkIPInList(clientIP, allowedIPs);
   }
   
-  return allowedIPs.includes(clientIP);
+  return checkIPInList(clientIP, allowedIPs);
+};
+
+// Helper function to check IP against list (supports CIDR and wildcards)
+const checkIPInList = (clientIP, allowedIPs) => {
+  for (const allowedIP of allowedIPs) {
+    // Allow wildcard
+    if (allowedIP === '*') {
+      return true;
+    }
+    
+    // Exact match
+    if (allowedIP === clientIP) {
+      return true;
+    }
+    
+    // CIDR notation (e.g., 27.4.0.0/16)
+    if (allowedIP.includes('/')) {
+      if (isIPInCIDR(clientIP, allowedIP)) {
+        return true;
+      }
+    }
+    
+    // Simple pattern matching (e.g., 27.4.*)
+    if (allowedIP.includes('*')) {
+      const pattern = allowedIP.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`);
+      if (regex.test(clientIP)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+};
+
+// Helper function to check if IP is in CIDR range
+const isIPInCIDR = (ip, cidr) => {
+  try {
+    const [network, prefixLength] = cidr.split('/');
+    const networkParts = network.split('.').map(Number);
+    const ipParts = ip.split('.').map(Number);
+    
+    if (networkParts.length !== 4 || ipParts.length !== 4) {
+      return false;
+    }
+    
+    const prefix = parseInt(prefixLength, 10);
+    const mask = (0xffffffff << (32 - prefix)) >>> 0;
+    
+    const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+    const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+    
+    return (networkInt & mask) === (ipInt & mask);
+  } catch (error) {
+    console.error('CIDR validation error:', error);
+    return false;
+  }
 };
 
 // Check if domain is whitelisted
