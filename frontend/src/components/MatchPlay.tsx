@@ -84,11 +84,11 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
 
     if (inningToUse === 1) {
       return (tossWinner === teamA.name && tossDecision === 'bat') ||
-             (tossWinner === teamB.name && tossDecision === 'bowl')
-             ? teamA : teamB
+        (tossWinner === teamB.name && tossDecision === 'bowl')
+        ? teamA : teamB
     } else {
       const firstInningBattingTeam = (tossWinner === teamA.name && tossDecision === 'bat') || (tossWinner === teamB.name && tossDecision === 'bowl')
-                                     ? teamA : teamB
+        ? teamA : teamB
       return firstInningBattingTeam === teamA ? teamB : teamA
     }
   }
@@ -166,8 +166,8 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
       newMatchData[battingTeamKey] = {
         ...newMatchData[battingTeamKey],
         players: newMatchData[battingTeamKey].players.map(p =>
-          p.player.id === selectedBatsman.player.id ? { 
-            ...p, 
+          p.player.id === selectedBatsman.player.id ? {
+            ...p,
             runs: p.runs + ballEvent.runs,
             // Increment the specific score type
             ones: p.ones + (ballEvent.runs === 1 && !ballEvent.isExtra ? 1 : 0),
@@ -366,7 +366,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
         <div className="card p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Trophy className="text-green-600" size={32} />
+              <Trophy className="text-primary-600" size={32} />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                   {matchData.teamA.name} vs {matchData.teamB.name}
@@ -374,11 +374,11 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                 <p className="text-gray-600">
                   {matchData.overs} overs • {currentInning === 1 ? '1st' : '2nd'} Inning
                   {currentInning === 2 && (
-                    <span className="ml-2 text-blue-600">
+                    <span className="ml-2 text-secondary-600">
                       (Teams switched - {getCurrentBattingTeam().name} chasing {inning1Stats.runs + 1})
                     </span>
                   )}
-                  {isMatchComplete && <span className="ml-2 text-green-600 font-semibold">Match Complete</span>}
+                  {isMatchComplete && <span className="ml-2 text-primary-600 font-semibold">Match Complete</span>}
                 </p>
               </div>
             </div>
@@ -396,7 +396,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
           {/* Current Batting Team */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Target className="text-blue-600" />
+              <Target className="text-secondary-600" />
               {currentBattingTeam.name} - Batting
             </h2>
             <div className="space-y-4">
@@ -404,7 +404,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                 <span className="text-3xl font-bold text-gray-800">
                   {currentStats.runs}/{currentStats.wickets}
                   {getAvailableBatsmen().length === 0 && (
-                    <span className="ml-2 text-red-600 text-lg font-semibold">ALL OUT</span>
+                    <span className="ml-2 text-accent-600 text-lg font-semibold">ALL OUT</span>
                   )}
                 </span>
                 <span className="text-lg text-gray-600">
@@ -424,7 +424,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
           {/* Previous/Bowling Team */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Clock className="text-red-600" />
+              <Clock className="text-accent-600" />
               {currentInning === 1
                 ? `${getCurrentBowlingTeam().name} - Bowling`
                 : `${getCurrentBowlingTeam().name} - ${inning1Stats.runs}/${inning1Stats.wickets}`
@@ -436,7 +436,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                   ({inning1Stats.overs}.{inning1Stats.ballsThisOver} overs)
                 </div>
                 {inning1Stats.wickets >= matchData.teamA.players.length - 1 && (
-                  <div className="text-sm text-red-600 font-semibold">
+                  <div className="text-sm text-accent-600 font-semibold">
                     ALL OUT
                   </div>
                 )}
@@ -464,13 +464,12 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                         key={player.player.id}
                         onClick={() => !isDismissed ? setSelectedBatsman(player) : null}
                         disabled={isDismissed}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          isDismissed
-                            ? 'border-red-300 bg-red-50 text-red-400 cursor-not-allowed'
+                        className={`p-3 rounded-lg border text-left transition-all ${isDismissed
+                            ? 'border-accent-300 bg-accent-50 text-accent-400 cursor-not-allowed'
                             : isSelected
-                            ? 'border-green-500 bg-green-50 text-green-700'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
                       >
                         <div className="flex justify-between items-center">
                           <div>
@@ -479,7 +478,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                             </div>
                             <div className="text-sm text-gray-600">
                               {player.runs} runs
-                              {isDismissed && <span className="ml-2 text-red-500 font-semibold">OUT</span>}
+                              {isDismissed && <span className="ml-2 text-accent-500 font-semibold">OUT</span>}
                             </div>
                           </div>
                         </div>
@@ -488,7 +487,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                   })}
                 </div>
                 {getAvailableBatsmen().length === 0 && (
-                  <p className="text-sm text-red-600 mt-2 text-center">
+                  <p className="text-sm text-accent-600 mt-2 text-center">
                     All batsmen are out!
                   </p>
                 )}
@@ -507,8 +506,8 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                   </div>
                 )}
                 {canChangeBowler() && previousOverBowler && (
-                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
+                  <div className="mb-3 p-2 bg-secondary-50 border border-secondary-200 rounded-lg">
+                    <p className="text-sm text-secondary-800">
                       Previous over bowler cannot bowl consecutive overs
                     </p>
                   </div>
@@ -525,13 +524,12 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                         key={player.player.id}
                         onClick={() => isAvailable ? setSelectedBowler(player) : null}
                         disabled={!isAvailable}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          !isAvailable
+                        className={`p-3 rounded-lg border text-left transition-all ${!isAvailable
                             ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
                             : isSelected
-                            ? 'border-red-500 bg-red-50 text-red-700'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                              ? 'border-accent-500 bg-accent-50 text-accent-700'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
                       >
                         <div className="flex justify-between items-center">
                           <div>
@@ -542,7 +540,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                                 <span className="ml-2 text-orange-600 text-xs">Previous over</span>
                               )}
                               {isCurrentBowler && !canChangeBowler() && (
-                                <span className="ml-2 text-blue-600 text-xs">Current over</span>
+                                <span className="ml-2 text-secondary-600 text-xs">Current over</span>
                               )}
                             </div>
                           </div>
@@ -552,7 +550,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                   })}
                 </div>
                 {getAvailableBowlers().length === 0 && (
-                  <p className="text-sm text-red-600 mt-2 text-center">
+                  <p className="text-sm text-accent-600 mt-2 text-center">
                     No available bowlers!
                   </p>
                 )}
@@ -578,15 +576,14 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                     key={outcome}
                     onClick={() => handleBall(outcome)}
                     disabled={!selectedBatsman || !selectedBowler}
-                    className={`p-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      color === 'gray' ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' :
-                      color === 'blue' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                      color === 'green' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                      color === 'purple' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' :
-                      color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                      color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
-                      'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
+                    className={`p-3 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${color === 'gray' ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' :
+                        color === 'blue' ? 'bg-secondary-100 text-secondary-800 hover:bg-secondary-200' :
+                          color === 'green' ? 'bg-primary-100 text-primary-800 hover:bg-primary-200' :
+                            color === 'purple' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' :
+                              color === 'yellow' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                color === 'orange' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                                  'bg-accent-100 text-accent-800 hover:bg-accent-200'
+                      }`}
                   >
                     {label}
                   </button>
@@ -607,7 +604,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
             <div className="text-center mb-6">
               <Trophy className="mx-auto mb-4 text-yellow-500" size={48} />
               <h2 className="text-2xl font-bold text-gray-800">Match Complete!</h2>
-              <p className="text-lg text-green-600 font-semibold">
+              <p className="text-lg text-primary-600 font-semibold">
                 {winner === 'Match Tied' ? 'Match Tied' : `${winner}`}
               </p>
               <div className="mt-4">
@@ -619,9 +616,9 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
                 </p>
               </div>
             </div>
-            
+
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+              <div className="mb-4 p-3 bg-accent-50 border border-accent-200 rounded-lg flex items-center gap-2 text-accent-700">
                 <AlertCircle size={16} />
                 {error}
               </div>
@@ -631,7 +628,7 @@ const MatchPlayCore: React.FC<{ initialMatchData: MatchData; onMatchComplete: ()
               <button
                 onClick={handleSaveMatch}
                 disabled={isSaving}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
               >
                 {isSaving ? (
                   <>

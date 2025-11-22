@@ -397,6 +397,64 @@ router.post("/profile/picture", authenticatePlayerToken, upload.single('profileP
   }
 });
 
+// Delete profile picture
+router.delete("/profile/picture", authenticatePlayerToken, async (req, res, next) => {
+  try {
+    const { playerId, clubId } = req.user;
+
+    // Get current profile picture URL to delete from storage if needed
+    const { data: player, error: fetchError } = await supabase
+      .from("players")
+      .select("profile_picture_url")
+      .eq("id", playerId)
+      .eq("club_id", clubId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // If there's a profile picture stored in Supabase Storage (not base64), delete it
+    if (player.profile_picture_url && !player.profile_picture_url.startsWith('data:')) {
+      try {
+        // Extract file path from URL
+        const url = new URL(player.profile_picture_url);
+        const pathParts = url.pathname.split('/');
+        const filePath = pathParts.slice(pathParts.indexOf(PROFILE_PICTURES_BUCKET) + 1).join('/');
+        
+        if (filePath) {
+          await supabase.storage
+            .from(PROFILE_PICTURES_BUCKET)
+            .remove([filePath]);
+        }
+      } catch (storageError) {
+        console.error('Error deleting from storage:', storageError);
+        // Continue anyway - we'll still remove the URL from database
+      }
+    }
+
+    // Update player record to remove profile picture URL
+    const { data: updatedPlayer, error: updateError } = await supabase
+      .from("players")
+      .update({ profile_picture_url: null })
+      .eq("id", playerId)
+      .eq("club_id", clubId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({
+      message: "Profile picture deleted successfully",
+      profilePictureUrl: null
+    });
+
+  } catch (err) {
+    console.error('Profile picture delete error:', err);
+    res.status(500).json({ 
+      error: "Failed to delete profile picture. Please try again." 
+    });
+  }
+});
+
 // Change player's own password
 router.post("/change-password", authenticatePlayerToken, async (req, res, next) => {
   try {

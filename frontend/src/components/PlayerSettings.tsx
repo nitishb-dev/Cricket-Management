@@ -88,7 +88,7 @@ export const PlayerSettings: React.FC = () => {
               >
                 <ArrowLeft size={20} className="text-gray-600" />
               </button>
-              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl">
                 <Settings className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -115,7 +115,7 @@ export const PlayerSettings: React.FC = () => {
                 onClick={() => setActiveTab('account')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                   activeTab === 'account'
-                    ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -127,7 +127,7 @@ export const PlayerSettings: React.FC = () => {
                 onClick={() => setActiveTab('password')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                   activeTab === 'password'
-                    ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -139,7 +139,7 @@ export const PlayerSettings: React.FC = () => {
                 onClick={() => setActiveTab('privacy')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                   activeTab === 'privacy'
-                    ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -157,7 +157,7 @@ export const PlayerSettings: React.FC = () => {
                 
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -256,15 +256,15 @@ export const PlayerSettings: React.FC = () => {
                       </div>
                       <button
                         onClick={() => setShowPasswordChange(true)}
-                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                       >
                         Change Password
                       </button>
                     </div>
 
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                      <h3 className="font-medium text-green-900 mb-2">🔒 Security Tips</h3>
-                      <ul className="text-sm text-green-800 space-y-1">
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <h3 className="font-medium text-blue-900 mb-2">🔒 Security Tips</h3>
+                      <ul className="text-sm text-blue-800 space-y-1">
                         <li>• Use a strong, unique password</li>
                         <li>• Don't share your password with anyone</li>
                         <li>• Change your password regularly</li>

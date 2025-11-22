@@ -78,7 +78,7 @@ export const MatchSetup: React.FC = () => {
         return (
           <div className="card p-6 sm:p-8 space-y-6">
             <div className="flex items-center gap-3">
-              <Settings className="text-green-600" size={24} />
+              <Settings className="text-primary-600" size={24} />
               <h2 className="text-2xl font-bold text-gray-800">
                 Match Configuration
               </h2>
@@ -219,11 +219,10 @@ export const MatchSetup: React.FC = () => {
                   <button
                     key={team}
                     onClick={() => setTossWinner(team)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      tossWinner === team
-                        ? "border-green-500 bg-green-50 text-green-700 font-semibold"
-                        : "border-gray-300 hover:border-green-400"
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all ${tossWinner === team
+                        ? "border-primary-500 bg-primary-50 text-primary-700 font-semibold"
+                        : "border-gray-300 hover:border-primary-400"
+                      }`}
                   >
                     {team}
                   </button>
@@ -241,11 +240,10 @@ export const MatchSetup: React.FC = () => {
                   <button
                     key={choice}
                     onClick={() => setTossDecision(choice as "bat" | "bowl")}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      tossDecision === choice
-                          ? "border-green-500 bg-green-50 text-green-700 font-semibold"
-                          : "border-gray-300 hover:border-green-400"
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all ${tossDecision === choice
+                        ? "border-primary-500 bg-primary-50 text-primary-700 font-semibold"
+                        : "border-gray-300 hover:border-primary-400"
+                      }`}
                   >
                     {choice === "bat" ? "Bat First" : "Bowl First"}
                   </button>
@@ -254,7 +252,7 @@ export const MatchSetup: React.FC = () => {
             </div>
 
             {/* Summary */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
               <h3 className="font-semibold text-slate-800 mb-2">Match Summary</h3>
               <div className="text-sm text-slate-700 space-y-1">
                 <p>

@@ -4,6 +4,7 @@ import { usePlayerApi } from '../context/usePlayerApi';
 import { useAuth } from '../context/AuthContext';
 import { ProfilePictureUpload } from './ProfilePictureUpload';
 import { PlayerAvatar } from './PlayerAvatar';
+import { CountrySelect } from './CountrySelect';
 
 interface PlayerProfileData {
   id: string;
@@ -95,6 +96,42 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
     }
   };
 
+  const handleImageDelete = async () => {
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/player/profile/picture`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete image');
+      }
+
+      const result = await response.json();
+      
+      // Update profile to remove image URL
+      if (profile) {
+        const updatedProfile = { ...profile, profilePictureUrl: null };
+        setProfile(updatedProfile);
+        onSave(updatedProfile);
+      }
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -130,7 +167,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -184,7 +221,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
 
         {/* Success Message */}
         {success && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 mb-6">
+          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 mb-6">
             <CheckCircle size={16} />
             <span className="text-sm">Profile updated successfully!</span>
           </div>
@@ -202,6 +239,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
         <ProfilePictureUpload
           currentImageUrl={profile.profilePictureUrl}
           onImageUpload={handleImageUpload}
+          onImageDelete={handleImageDelete}
           loading={uploadingImage}
         />
 
@@ -227,16 +265,11 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Globe className="inline w-4 h-4 mr-1" />
               Country
             </label>
-            <input
-              type="text"
+            <CountrySelect
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="input-field"
-              placeholder="Enter your country"
-              maxLength={50}
+              onChange={setCountry}
               disabled={saving}
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -248,7 +281,7 @@ export const EditProfile: React.FC<EditProfileProps> = ({ onBack, onSave }) => {
             <button
               type="submit"
               disabled={saving || uploadingImage}
-              className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-accent flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>

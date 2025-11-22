@@ -148,12 +148,12 @@ export const PlayerPasswordChange: React.FC<PlayerPasswordChangeProps> = ({
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <div className="flex items-center gap-2 text-green-700">
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center gap-2 text-blue-700">
               <CheckCircle size={16} />
               <span className="font-medium">Password changed successfully!</span>
             </div>
-            <p className="text-sm text-green-600 mt-1">
+            <p className="text-sm text-blue-600 mt-1">
               {isFirstTime ? 'Redirecting to your dashboard...' : 'You can now use your new password.'}
             </p>
           </div>
@@ -260,8 +260,8 @@ export const PlayerPasswordChange: React.FC<PlayerPasswordChangeProps> = ({
                   { test: /[A-Za-z]/.test(newPassword), text: 'Contains letters' },
                   { test: /[0-9]/.test(newPassword), text: 'Contains numbers' }
                 ].map((req, index) => (
-                  <div key={index} className={`flex items-center gap-2 ${req.test ? 'text-green-600' : 'text-gray-500'}`}>
-                    <div className={`w-2 h-2 rounded-full ${req.test ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div key={index} className={`flex items-center gap-2 ${req.test ? 'text-blue-600' : 'text-gray-500'}`}>
+                    <div className={`w-2 h-2 rounded-full ${req.test ? 'bg-blue-500' : 'bg-gray-300'}`} />
                     {req.text}
                   </div>
                 ))}

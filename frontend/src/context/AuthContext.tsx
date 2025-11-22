@@ -10,7 +10,7 @@ interface AuthContextType {
   clubId?: string | null;
   clubName?: string | null;
   login: (user: string, pass: string) => boolean;
-  loginPlayer?: (username: string, password: string) => Promise<boolean>;
+  loginPlayer?: (username: string, password: string) => Promise<{ success: boolean; mustChangePassword?: boolean }>;
   logout: () => void;
   checkAuthStatus: () => void;
 }
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUserId(null);
     setClubId(null);
     setClubName(null);
-    
+
     // Clear all auth data
     localStorage.removeItem('cricket_admin_token');
     localStorage.removeItem('cricket_admin_data');
@@ -145,16 +145,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sessionStorage.setItem('authRole', 'player');
       sessionStorage.setItem('authUserId', data.user.id);
       sessionStorage.setItem('mustChangePassword', data.mustChangePassword ? 'true' : 'false');
-      
+
       setIsAuthenticated(true);
       setUser(data.user.name);
       setRole('player');
       setUserId(data.user.id);
       setToken(data.token);
-      
-      return { 
-        success: true, 
-        mustChangePassword: data.mustChangePassword 
+
+      return {
+        success: true,
+        mustChangePassword: data.mustChangePassword
       };
     } catch (err) {
       console.error('player login error', err);

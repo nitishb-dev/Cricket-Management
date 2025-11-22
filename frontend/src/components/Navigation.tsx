@@ -72,7 +72,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
         <div className="mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <LayoutDashboard className="text-green-600" size={24} />
+              <LayoutDashboard className={role === 'player' ? 'text-secondary-600' : 'text-primary-600'} size={24} />
               <div>
                 <h1 className="text-lg font-bold text-gray-800">Cricket Manager</h1>
                 {clubName && <p className="text-xs text-gray-500">{clubName}</p>}
@@ -83,7 +83,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
             <div className="relative" ref={mobileMenuRef}>
               <button
                 onClick={() => setMenuOpen(v => !v)}
-                className="w-10 h-10 rounded-full bg-gradient-primary text-white font-bold flex items-center justify-center"
+                className={`w-10 h-10 rounded-full text-white font-bold flex items-center justify-center ${
+                  role === 'player' ? 'bg-gradient-accent' : 'bg-gradient-primary'
+                }`}
               >
                 {initials}
               </button>
@@ -143,7 +145,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
       </header>
 
       {/* Desktop Navigation */}
-      <nav className="hidden lg:block bg-gradient-to-r from-green-700 via-green-600 to-green-700 shadow-lg border-b-2 border-green-500">
+      <nav className={`hidden lg:block shadow-lg border-b-2 ${
+        role === 'player' 
+          ? 'bg-gradient-to-r from-secondary-700 via-secondary-600 to-secondary-700 border-secondary-500' 
+          : 'bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 border-primary-500'
+      }`}>
         <div className="mx-auto px-2 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -154,7 +160,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">Cricket Manager</h1>
-                {clubName && <p className="text-sm text-green-100">{clubName}</p>}
+                {clubName && <p className={`text-sm ${role === 'player' ? 'text-secondary-100' : 'text-primary-100'}`}>{clubName}</p>}
               </div>
             </div>
 
@@ -168,11 +174,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                     <NavLink
                       key={item.id}
                       to={item.path}
-                      className={`group relative flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                        isActive
-                          ? 'bg-white text-green-700 shadow-lg'
-                          : 'text-green-100 hover:text-white hover:bg-green-600/50'
-                      }`}
+                      className={`group relative flex items-center gap-3 px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${isActive
+                          ? role === 'player'
+                            ? 'bg-white text-secondary-700 shadow-lg'
+                            : 'bg-white text-primary-700 shadow-lg'
+                          : role === 'player'
+                            ? 'text-secondary-100 hover:text-white hover:bg-secondary-600/50'
+                            : 'text-primary-100 hover:text-white hover:bg-primary-600/50'
+                        }`}
                     >
                       <Icon
                         size={18}
@@ -193,7 +202,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                   }}
                   className="flex items-center gap-3 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
                 >
-                  <div className="w-9 h-9 rounded-full bg-white text-green-700 font-bold flex items-center justify-center">
+                  <div className={`w-9 h-9 rounded-full bg-white font-bold flex items-center justify-center ${
+                    role === 'player' ? 'text-secondary-700' : 'text-primary-700'
+                  }`}>
                     {initials}
                   </div>
                   <span className="hidden md:inline text-white font-medium">{user ?? 'User'}</span>
@@ -254,7 +265,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
 
       {/* Mobile Bottom Nav */}
       <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-green-600/60 backdrop-blur-sm border-t border-green-500"
+        className={`lg:hidden fixed bottom-0 left-0 right-0 z-30 backdrop-blur-sm border-t ${
+          role === 'player'
+            ? 'bg-secondary-600/60 border-secondary-500'
+            : 'bg-primary-600/60 border-primary-500'
+        }`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
       >
         <div className="flex">
@@ -266,8 +281,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeView, role = 'admi
                 key={item.id}
                 to={item.path}
                 className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-2 transition-all duration-300 ${
-                  isActive ? 'text-white bg-green-700/50' : 'text-green-100 hover:text-white'
-                }`}
+                  isActive 
+                    ? role === 'player'
+                      ? 'text-white bg-secondary-700/50'
+                      : 'text-white bg-primary-700/50'
+                    : role === 'player'
+                      ? 'text-secondary-100 hover:text-white'
+                      : 'text-primary-100 hover:text-white'
+                  }`}
               >
                 <div className={`p-1 rounded-lg ${isActive ? 'bg-white/20' : ''}`}>
                   <Icon size={18} className={isActive ? 'animate-pulse' : ''} />
