@@ -1,284 +1,257 @@
-import React, { useEffect, useState } from 'react'
-import { Trophy, Users, History, Calendar, Play, Target, TrendingUp } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useCricket } from '../context/CricketContext'
-import dayjs from 'dayjs'
-import { PlayerStats } from '../types/cricket'
+import React, { useEffect, useState } from 'react';
+import { Trophy, Users, History, Calendar, Play, ArrowRight, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useCricket } from '../context/CricketContext';
+import dayjs from 'dayjs';
+import { PlayerStats } from '../types/cricket';
+import { StatsCard } from './StatsCard';
+import { Button } from './Button';
+import { Avatar } from './Avatar';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-
-  const { players, matches, loading, getAllPlayerStats } = useCricket()
-  const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3))
+  const { players, matches, loading, getAllPlayerStats } = useCricket();
+  const [recentMatches, setRecentMatches] = useState(matches.slice(0, 3));
   const [topStats, setTopStats] = useState<{
-    topScorer: PlayerStats | null
-    topWicketTaker: PlayerStats | null
+    topScorer: PlayerStats | null;
+    topWicketTaker: PlayerStats | null;
   }>({
     topScorer: null,
     topWicketTaker: null
-  })
+  });
 
   useEffect(() => {
-    setRecentMatches(matches.slice(0, 3))
-  }, [matches])
+    setRecentMatches(matches.slice(0, 3));
+  }, [matches]);
 
   useEffect(() => {
     const fetchTopPlayers = async () => {
-      const stats = await getAllPlayerStats()
+      const stats = await getAllPlayerStats();
       if (stats && stats.length > 0) {
-        const scorer = [...stats].sort((a, b) => b.totalRuns - a.totalRuns)[0]
-        const wicketTaker = [...stats].sort((a, b) => b.totalWickets - a.totalWickets)[0]
+        const scorer = [...stats].sort((a, b) => b.totalRuns - a.totalRuns)[0];
+        const wicketTaker = [...stats].sort((a, b) => b.totalWickets - a.totalWickets)[0];
         setTopStats({
-          topScorer: scorer.totalRuns > 0 ? scorer : null,
-          topWicketTaker: wicketTaker.totalWickets > 0 ? wicketTaker : null
-        })
+          topScorer: scorer?.totalRuns > 0 ? scorer : null,
+          topWicketTaker: wicketTaker?.totalWickets > 0 ? wicketTaker : null
+        });
       }
-    }
+    };
 
     if (matches.length > 0) {
-      fetchTopPlayers()
+      fetchTopPlayers();
     }
-  }, [matches, getAllPlayerStats])
-
-  const stats = [
-    {
-      title: 'Total Players',
-      value: players.length,
-      icon: Users,
-      gradient: 'from-green-500 to-green-600',
-      action: () => navigate('/players')
-    },
-    {
-      title: 'Matches Played',
-      value: matches.length,
-      icon: History,
-      gradient: 'from-orange-500 to-orange-600',
-      action: () => navigate('/history')
-    },
-    {
-      title: 'Active Season',
-      value: '2025',
-      icon: Calendar,
-      gradient: 'from-blue-500 to-blue-600',
-      action: () => navigate('/stats')
-    }
-  ]
+  }, [matches, getAllPlayerStats]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent"></div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="w-full overflow-x-hidden">
-      <div className="space-y-6">
-        <div className="relative overflow-hidden bg-gradient-primary rounded-3xl shadow-2xl">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-          <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+    <div className="space-y-8 animate-fade-in">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-primary rounded-3xl shadow-2xl text-white p-8 sm:p-12">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-accent-500/20 rounded-full blur-3xl"></div>
 
-          <div className="relative px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center text-white">
-            <div className="flex justify-center mb-4 sm:mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/20 rounded-full blur-lg"></div>
-                <Trophy className="relative text-orange-300" size={56} />
-              </div>
+        <div className="relative z-10 max-w-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">
+              <Trophy className="w-6 h-6 text-accent-300" />
             </div>
-
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
-              Welcome to Cricket Manager
-            </h1>
-            <p className="text-sm sm:text-lg text-green-100 mb-6 max-w-xl mx-auto">
-              Your ultimate cricket management platform. Track matches, analyze performance, and build winning teams.
-            </p>
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => navigate('/app/new-match')}
-                className="btn-secondary group flex items-center gap-3 w-full sm:w-auto justify-center"
-              >
-                <Play size={20} className="group-hover:rotate-12 transition-transform" />
-                Start New Match
-              </button>
-            </div>
+            <span className="font-medium text-primary-50">Season 2025</span>
           </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon
-
-            return (
-              <div
-                key={index}
-                onClick={stat.action}
-                className="stats-card group p-4 sm:p-6"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-gray-600 text-xs sm:text-sm font-medium mb-2">{stat.title}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">{stat.value}</p>
-                    <div className="w-12 h-1 bg-gradient-to-r from-green-400 to-orange-400 rounded-full"></div>
-                  </div>
-                  <div className={`bg-gradient-to-r ${stat.gradient} p-3 sm:p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="text-white" size={22} />
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Recent Matches */}
-        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl">
-                <Trophy className="text-white" size={20} />
-              </div>
-              Recent Matches
-            </h2>
-            <button
-              onClick={() => navigate('/history')}
-              className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+          <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-tight">
+            Manage Your Cricket Club Like a Pro
+          </h1>
+          <p className="text-lg text-primary-50 mb-8 max-w-xl">
+            Track matches, analyze player performance, and build your legacy with our advanced management tools.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Button
+              size="lg"
+              className="bg-white !text-primary-700 hover:!bg-white border-none shadow-lg hover:shadow-xl font-semibold"
+              onClick={() => navigate('/app/new-match')}
+              leftIcon={<Play className="w-5 h-5 fill-current text-primary-700" />}
             >
+              Start New Match
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10 hover:border-white/50"
+              onClick={() => navigate('/app/players')}
+            >
+              Manage Players
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatsCard
+          title="Total Players"
+          value={players.length}
+          icon={Users}
+          gradient="from-primary-500 to-primary-700"
+          onClick={() => navigate('/app/players')}
+        />
+        <StatsCard
+          title="Matches Played"
+          value={matches.length}
+          icon={History}
+          gradient="from-accent-500 to-accent-700"
+          onClick={() => navigate('/app/history')}
+        />
+        <StatsCard
+          title="Active Season"
+          value="2025"
+          icon={Calendar}
+          gradient="from-secondary-500 to-secondary-700"
+          onClick={() => navigate('/app/stats')}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Matches */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-slate-900">Recent Matches</h2>
+            <Button variant="ghost" onClick={() => navigate('/app/history')} rightIcon={<ArrowRight className="w-4 h-4" />}>
               View All
-              <History size={16} />
-            </button>
+            </Button>
           </div>
 
-          {recentMatches.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-lg opacity-20"></div>
-                <History size={56} className="relative mx-auto text-gray-400" />
+          <div className="space-y-4">
+            {recentMatches.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-200">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <History className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">No matches yet</h3>
+                <p className="text-slate-500 mt-1">Start a new match to see it here.</p>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">No matches played yet</h3>
-              <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md mx-auto">
-                Start your cricket journey by creating your first match. Track scores, manage teams, and build your cricket legacy.
-              </p>
-              <button
-                onClick={() => navigate('/app/new-match')}
-                className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-              >
-                <Play size={18} />
-                Create First Match
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentMatches.map((match) => (
+            ) : (
+              recentMatches.map((match) => (
                 <div
                   key={match.id}
-                  className="group relative bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 sm:p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                  className="group bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md hover:border-primary-200 transition-all cursor-pointer"
+                  onClick={() => navigate('/app/history')}
                 >
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base sm:text-lg font-bold text-gray-800">
-                        {match.team_a_name} vs {match.team_b_name}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 bg-secondary-50 text-secondary-700 text-xs font-bold uppercase tracking-wider rounded-full">
+                        {match.overs} Overs
                       </span>
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                        {match.overs} overs
+                      <span className="text-sm text-slate-500">
+                        {dayjs(match.match_date).format('MMM D, YYYY')}
                       </span>
                     </div>
-                    <span className="text-xs sm:text-sm text-gray-500 font-medium">
-                      {dayjs(match.match_date).format('MMM DD, YYYY')}
-                    </span>
+                    {match.winner && (
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary-700 bg-primary-50 px-3 py-1 rounded-full">
+                        <Trophy className="w-4 h-4" />
+                        {match.winner} Won
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                        <span className="font-semibold text-gray-700">{match.team_a_name}</span>
-                        <span className="text-lg font-bold text-blue-600">{match.team_a_score}/{match.team_a_wickets}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                        <span className="font-semibold text-gray-700">{match.team_b_name}</span>
-                        <span className="text-lg font-bold text-purple-600">{match.team_b_score}/{match.team_b_wickets}</span>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">Team A</p>
+                      <div className="flex items-baseline gap-2">
+                        <h3 className="text-lg font-bold text-slate-900">{match.team_a_name}</h3>
+                        <span className="text-lg font-mono text-primary-600">
+                          {match.team_a_score}/{match.team_a_wickets}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="flex flex-col justify-center space-y-2">
-                      <div className="text-center lg:text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg shadow-md">
-                          <Trophy size={14} />
-                          {match.winner}
-                        </div>
-                      </div>
-                      <div className="text-center lg:text-right">
-                        <span className="text-sm text-gray-600">Man of the Match: </span>
-                        <span className="font-semibold text-orange-600">{match.man_of_match}</span>
+                    <div className="space-y-1 text-right">
+                      <p className="text-sm text-slate-500">Team B</p>
+                      <div className="flex items-baseline gap-2 justify-end">
+                        <h3 className="text-lg font-bold text-slate-900">{match.team_b_name}</h3>
+                        <span className="text-lg font-mono text-primary-600">
+                          {match.team_b_score}/{match.team_b_wickets}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
         {/* Top Performers */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-          {topStats.topScorer ? (
-            <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-6 sm:p-8 text-white">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-white/20 rounded-xl">
-                    <Target size={20} />
-                  </div>
-                  <h3 className="text-lg font-bold">Top Run Scorer</h3>
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold mb-1">{topStats.topScorer.player.name}</p>
-                <p className="text-lg sm:text-xl opacity-90 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-white rounded-full"></span>
-                  {topStats.topScorer.totalRuns} Runs
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-6 text-center border-2 border-dashed border-gray-300">
-              <Target size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 font-medium">No run scorer data yet</p>
-              <p className="text-sm text-gray-500 mt-2">Play matches to see top performers</p>
-            </div>
-          )}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-slate-900">Top Performers</h2>
 
-          {topStats.topWicketTaker ? (
-            <div className="relative overflow-hidden bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 rounded-2xl shadow-2xl p-6 sm:p-8 text-white">
-              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-white/20 rounded-xl">
-                    <TrendingUp size={20} />
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Top Scorer */}
+            <div className="p-6 border-b border-slate-100 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-accent-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 bg-accent-100 text-accent-600 rounded-lg">
+                    <Activity className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-bold">Top Wicket Taker</h3>
+                  <span className="font-semibold text-slate-900">Orange Cap</span>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold mb-1">{topStats.topWicketTaker.player.name}</p>
-                <p className="text-lg sm:text-xl opacity-90 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-white rounded-full"></span>
-                  {topStats.topWicketTaker.totalWickets} Wickets
-                </p>
+
+                {topStats.topScorer ? (
+                  <div className="flex items-center gap-4">
+                    <Avatar
+                      src={topStats.topScorer.player.profilePictureUrl}
+                      alt={topStats.topScorer.player.name}
+                      size="lg"
+                      className="ring-4 ring-accent-50"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-900 text-lg">{topStats.topScorer.player.name}</p>
+                      <p className="text-accent-600 font-bold text-2xl">{topStats.topScorer.totalRuns} <span className="text-sm font-normal text-slate-500">Runs</span></p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm">No data available</p>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-6 text-center border-2 border-dashed border-gray-300">
-              <TrendingUp size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 font-medium">No wicket taker data yet</p>
-              <p className="text-sm text-gray-500 mt-2">Play matches to see top performers</p>
+
+            {/* Top Wicket Taker */}
+            <div className="p-6 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-secondary-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 bg-secondary-100 text-secondary-600 rounded-lg">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <span className="font-semibold text-slate-900">Purple Cap</span>
+                </div>
+
+                {topStats.topWicketTaker ? (
+                  <div className="flex items-center gap-4">
+                    <Avatar
+                      src={topStats.topWicketTaker.player.profilePictureUrl}
+                      alt={topStats.topWicketTaker.player.name}
+                      size="lg"
+                      className="ring-4 ring-secondary-50"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-900 text-lg">{topStats.topWicketTaker.player.name}</p>
+                      <p className="text-secondary-600 font-bold text-2xl">{topStats.topWicketTaker.totalWickets} <span className="text-sm font-normal text-slate-500">Wickets</span></p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm">No data available</p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

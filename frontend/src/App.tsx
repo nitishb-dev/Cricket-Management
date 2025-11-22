@@ -26,12 +26,14 @@ import { PlayerPasswordChange } from './components/PlayerPasswordChange';
 import { PlayerSettings } from './components/PlayerSettings';
 import { ClubDetails } from './components/ClubDetails';
 import { SuperAdminProtectedRoute } from './components/SuperAdminProtectedRoute';
+import { ToastContainer } from './components/Toast';
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
         <CricketProvider>
+          <ToastContainer />
           <Routes>
             <Route path="/" element={<LoginChoice />} />
             <Route path="/admin-login" element={<AdminLogin />} />
@@ -60,9 +62,9 @@ const App: React.FC = () => {
             </Route>
             {/* Player Password Change - Special route */}
             <Route path="/player/change-password" element={
-              <PlayerPasswordChange 
-                isFirstTime={true} 
-                onSuccess={() => window.location.href = '/player/dashboard'} 
+              <PlayerPasswordChange
+                isFirstTime={true}
+                onSuccess={() => window.location.href = '/player/dashboard'}
               />
             } />
             {/* Super Admin Routes - Protected and Hidden */}

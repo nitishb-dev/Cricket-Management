@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, User, Lock, AlertCircle, LogIn } from 'lucide-react';
+import { Trophy, User, Lock, AlertCircle, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ClubRegistration } from './ClubRegistration';
@@ -13,6 +13,7 @@ export const AdminLogin: React.FC = () => {
   const [initialCredentials, setInitialCredentials] = useState<{ username: string; password: string } | null>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +66,15 @@ export const AdminLogin: React.FC = () => {
   };
 
   const loginForm = (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-orange-50 flex items-center justify-center p-4 relative">
+      <button
+        onClick={() => navigate('/player/login')}
+        className="absolute top-4 left-4 sm:top-8 sm:left-8 p-2 text-gray-600 hover:text-primary-600 hover:bg-white rounded-full transition-all duration-200 flex items-center gap-2 group"
+      >
+        <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+        <span className="font-medium hidden sm:inline">Player</span>
+      </button>
+
       <div className="card max-w-md w-full p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -103,15 +112,25 @@ export const AdminLogin: React.FC = () => {
               <Lock className="inline w-4 h-4 mr-1" />
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="Enter your password"
-              required
-              disabled={loading}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field pr-10"
+                placeholder="Enter your password"
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -150,7 +169,7 @@ export const AdminLogin: React.FC = () => {
               Register Your Cricket Club
             </button>
           </div>
-          
+
           <div>
             <p className="text-gray-600 mb-2">Forgot your password?</p>
             <button

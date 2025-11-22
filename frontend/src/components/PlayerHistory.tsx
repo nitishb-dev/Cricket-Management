@@ -52,7 +52,7 @@ const PlayerHistory: React.FC = () => {
       {/* Header */}
       <div className="card p-6 sm:p-8">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-primary rounded-2xl">
+          <div className="p-3 bg-gradient-accent rounded-2xl">
             <History className="text-white w-8 h-8" />
           </div>
           <div>
@@ -64,7 +64,7 @@ const PlayerHistory: React.FC = () => {
 
       {loading ? (
         <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
         </div>
       ) : error ? (
         <div className="card p-8 text-center text-red-600">
@@ -83,7 +83,7 @@ const PlayerHistory: React.FC = () => {
             const match = h.matches;
             if (!match) return null;
             const result = match.winner ? (match.winner === h.team ? 'Won' : 'Lost') : 'N/A';
-            const resultColor = result === 'Won' ? 'border-green-500 bg-green-50' : result === 'Lost' ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50';
+            const resultColor = result === 'Won' ? 'border-blue-500 bg-blue-50' : result === 'Lost' ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50';
 
             return (
               <div key={h.id} className={`card p-5 border-l-4 ${resultColor}`}>
@@ -112,7 +112,7 @@ const PlayerHistory: React.FC = () => {
                   </div>
 
                   {/* Result */}
-                  <div className={`px-3 py-1.5 rounded-full text-sm font-semibold ${result === 'Won' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{result}</div>
+                  <div className={`px-3 py-1.5 rounded-full text-sm font-semibold ${result === 'Won' ? 'bg-blue-200 text-blue-800' : 'bg-red-200 text-red-800'}`}>{result}</div>
                 </div>
               </div>
             );

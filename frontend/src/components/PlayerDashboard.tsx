@@ -61,12 +61,14 @@ const PlayerDashboard: React.FC = () => {
   const [profile, setProfile] = useState<PlayerProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartReady, setChartReady] = useState(false);
 
   const [history, setHistory] = useState<MatchHistoryEntry[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setChartReady(false);
     try {
       const [statsData, profileData, historyData] = await Promise.all([
         apiFetch<PlayerDashboardStats>(`/player/detailed-stats`),
@@ -89,10 +91,20 @@ const PlayerDashboard: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  // Delay chart rendering to ensure container is mounted
+  useEffect(() => {
+    if (!loading && history.length > 0) {
+      const timer = setTimeout(() => {
+        setChartReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, history]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -113,6 +125,8 @@ const PlayerDashboard: React.FC = () => {
       name: h.matches?.match_date ? dayjs(h.matches.match_date).format('MMM DD') : 'N/A',
       runs: h.runs,
     }));
+
+  const hasChartData = chartData.length > 0 && chartData.some(d => d.runs > 0 || d.name !== 'N/A');
 
   return (
     <div className="space-y-8">
@@ -148,7 +162,7 @@ const PlayerDashboard: React.FC = () => {
             <StatHighlight label="Matches" value={stats.totalMatches} icon={<BarChart3 size={16} />} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
             <StatHighlight label="Runs" value={stats.totalRuns} icon={<Target size={16} />} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
             <StatHighlight label="Wickets" value={stats.totalWickets} icon={<GitCommit size={16} />} gradient="bg-gradient-to-br from-red-500 to-pink-500" />
-            <StatHighlight label="Wins" value={stats.totalWins} icon={<Trophy size={16} />} gradient="bg-gradient-to-br from-green-500 to-green-600" />
+            <StatHighlight label="Wins" value={stats.totalWins} icon={<Trophy size={16} />} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
             <StatHighlight label="Man of Match" value={stats.manOfMatchCount} icon={<Award size={16} />} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
           </div>
         ) : (
@@ -161,30 +175,37 @@ const PlayerDashboard: React.FC = () => {
         <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Form</h3>
         {history.length > 0 ? (
           <div className="space-y-6">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                      backdropFilter: 'blur(4px)',
-                      borderRadius: '0.75rem',
-                      border: '1px solid #e5e7eb',
-                    }}
-                  />
-                  <Bar dataKey="runs" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {hasChartData && chartReady && (
+              <div className="w-full h-64 min-h-[256px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        backdropFilter: 'blur(4px)',
+                        borderRadius: '0.75rem',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    />
+                    <Bar dataKey="runs" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {hasChartData && !chartReady && (
+              <div className="w-full h-64 min-h-[256px] flex items-center justify-center bg-gray-50 rounded-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+              </div>
+            )}
             <div className="space-y-4">
               {history.map(h => {
                 const match = h.matches;
                 if (!match) return null;
                 const result = match.winner ? (match.winner === h.team ? 'Won' : 'Lost') : 'N/A';
-                const resultColor = result === 'Won' ? 'border-green-500 bg-green-50' : result === 'Lost' ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50';
+                const resultColor = result === 'Won' ? 'border-blue-500 bg-blue-50' : result === 'Lost' ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50';
 
                 return (
                   <div key={h.id} className={`p-4 border-l-4 rounded-r-lg ${resultColor} flex flex-col sm:flex-row items-center justify-between gap-4`}>
@@ -204,7 +225,7 @@ const PlayerDashboard: React.FC = () => {
                         <div className="text-xs text-gray-500">Wickets</div>
                       </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${result === 'Won' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{result}</div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${result === 'Won' ? 'bg-blue-200 text-blue-800' : 'bg-red-200 text-red-800'}`}>{result}</div>
                   </div>
                 );
               })}

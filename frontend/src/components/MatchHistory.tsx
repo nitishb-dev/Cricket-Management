@@ -119,7 +119,7 @@ export const MatchHistory: React.FC = () => {
   }
 
   return (
-    <div className="w-full overflow-x-hidden">
+    <div className="w-full">
       <div className="space-y-8">
         {/* Header */}
         <div className="card p-6 sm:p-8">
@@ -184,7 +184,7 @@ export const MatchHistory: React.FC = () => {
             {filteredMatches.map(match => (
               <div
                 key={match.id}
-                className="card-hover"
+                className="card p-0 transition-shadow duration-300 hover:shadow-xl cursor-pointer"
                 onClick={() => loadMatchStats(match)}
               >
                 <div className="p-4 sm:p-6">

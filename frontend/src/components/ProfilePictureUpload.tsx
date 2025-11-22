@@ -1,20 +1,25 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Camera, Upload, X, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
+import { ImageCropper } from './ImageCropper';
 
 interface ProfilePictureUploadProps {
   currentImageUrl?: string | null;
   onImageUpload: (file: File) => Promise<void>;
+  onImageDelete?: () => Promise<void>;
   loading?: boolean;
 }
 
 export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
   currentImageUrl,
   onImageUpload,
+  onImageDelete,
   loading = false
 }) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
@@ -34,26 +39,55 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
 
   const handleFileSelect = async (file: File) => {
     setError(null);
-    
+
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    // Create preview
+    // Create preview for cropping
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+      const imageDataUrl = e.target?.result as string;
+      setImageToCrop(imageDataUrl);
+      setShowCropper(true);
     };
     reader.readAsDataURL(file);
+  };
 
-    // Upload file
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    setShowCropper(false);
+    setError(null);
+
     try {
-      await onImageUpload(file);
+      // Convert blob to file
+      const croppedFile = new File([croppedImageBlob], 'profile-picture.jpg', {
+        type: 'image/jpeg',
+      });
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(croppedFile);
+
+      // Upload file
+      await onImageUpload(croppedFile);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload image');
       setPreview(null);
+    } finally {
+      setImageToCrop(null);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setImageToCrop(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -67,7 +101,7 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFileSelect(file);
@@ -96,10 +130,33 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!onImageDelete) return;
+
+    if (window.confirm('Are you sure you want to delete your profile picture?')) {
+      try {
+        setError(null);
+        await onImageDelete();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete image');
+      }
+    }
+  };
+
   const displayImage = preview || currentImageUrl;
 
   return (
-    <div className="space-y-4">
+    <>
+      {/* Image Cropper Modal */}
+      {showCropper && imageToCrop && (
+        <ImageCropper
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
+
+      <div className="space-y-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
         <Camera className="inline w-4 h-4 mr-1" />
         Profile Picture
@@ -122,7 +179,7 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Loading Overlay */}
           {loading && (
             <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
@@ -133,11 +190,10 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
 
         {/* Upload Area */}
         <div
-          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
-            dragOver
+          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragOver
               ? 'border-green-400 bg-green-50'
               : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-          } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -162,18 +218,34 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
           disabled={loading}
         />
 
-        {/* Clear Preview Button */}
-        {preview && (
-          <button
-            type="button"
-            onClick={clearPreview}
-            disabled={loading}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
-          >
-            <X size={16} />
-            Clear Preview
-          </button>
-        )}
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {/* Clear Preview Button */}
+          {preview && (
+            <button
+              type="button"
+              onClick={clearPreview}
+              disabled={loading}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50 transition-colors"
+            >
+              <X size={16} />
+              Clear Preview
+            </button>
+          )}
+
+          {/* Delete Profile Picture Button */}
+          {!preview && currentImageUrl && onImageDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={loading}
+              className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
+            >
+              <Trash2 size={16} />
+              Delete Profile Picture
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Error Message */}
@@ -194,10 +266,11 @@ export const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
 
       {/* Upload Guidelines */}
       <div className="text-xs text-gray-500 space-y-1">
-        <p>• Recommended: Square images (1:1 ratio) for best results</p>
+        <p>• You can crop and adjust your image after selecting</p>
         <p>• Maximum file size: 5MB</p>
         <p>• Supported formats: JPG, PNG, GIF</p>
       </div>
     </div>
+    </>
   );
 };

@@ -119,7 +119,7 @@ export const PlayerStats: React.FC = () => {
     if (myStatsLoading) {
       return (
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
         </div>
       );
     }
@@ -130,8 +130,8 @@ export const PlayerStats: React.FC = () => {
           <div className="p-8 text-center text-red-600 mt-8">
             <h2 className="text-xl font-bold">Error Loading Stats</h2>
             <p>{myStatsError || 'Could not find your statistics.'}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               Retry
@@ -145,9 +145,9 @@ export const PlayerStats: React.FC = () => {
       <div className="space-y-8">
         {/* Header */}
         <div className="card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <PlayerAvatar 
-            profilePictureUrl={myProfile?.profilePictureUrl} 
-            name={myStats.player.name} 
+          <PlayerAvatar
+            profilePictureUrl={myProfile?.profilePictureUrl}
+            name={myStats.player.name}
             size="2xl"
           />
           <div className="text-center sm:text-left">
@@ -161,19 +161,19 @@ export const PlayerStats: React.FC = () => {
 
         {/* General Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard label="Matches Played" value={myStats.totalMatches} icon={<BarChart3 />} />
-          <StatCard label="Matches Won" value={myStats.totalWins} icon={<Trophy />} />
-          <StatCard label="Man of the Match" value={myStats.manOfMatchCount} icon={<Award />} />
+          <StatCard label="Matches Played" value={myStats.totalMatches} icon={<BarChart3 />} variant="blue" />
+          <StatCard label="Matches Won" value={myStats.totalWins} icon={<Trophy />} variant="blue" />
+          <StatCard label="Man of the Match" value={myStats.manOfMatchCount} icon={<Award />} variant="blue" />
         </div>
 
         {/* Batting Stats */}
         <div className="card p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Batting Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Runs" value={myStats.totalRuns} icon={<Target />} />
-            <StatCard label="Average" value={myStats.battingAverage} icon={<TrendingUp />} />
-            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} />
-            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} />
+            <StatCard label="Total Runs" value={myStats.totalRuns} icon={<Target />} variant="blue" />
+            <StatCard label="Average" value={myStats.battingAverage} icon={<TrendingUp />} variant="blue" />
+            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} variant="blue" />
+            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} variant="blue" />
           </div>
         </div>
 
@@ -181,10 +181,10 @@ export const PlayerStats: React.FC = () => {
         <div className="card p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Bowling Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Wickets" value={myStats.totalWickets} icon={<GitCommit />} />
-            <StatCard label="Bowling Average" value={myStats.bowlingAverage} icon={<Shield />} />
-            <StatCard label="Win Percentage" value={myStats.winPercentage} icon={<TrendingUp />} />
-            <StatCard label="Best Figures" value="N/A" icon={<Shield />} />
+            <StatCard label="Total Wickets" value={myStats.totalWickets} icon={<GitCommit />} variant="blue" />
+            <StatCard label="Bowling Average" value={myStats.bowlingAverage} icon={<Shield />} variant="blue" />
+            <StatCard label="Win Percentage" value={myStats.winPercentage} icon={<TrendingUp />} variant="blue" />
+            <StatCard label="Best Figures" value="N/A" icon={<Shield />} variant="blue" />
           </div>
         </div>
 
@@ -192,11 +192,11 @@ export const PlayerStats: React.FC = () => {
         <div className="card p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Boundary Breakdown</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <StatCard label="Ones" value={myStats.boundaries.ones} icon={<Target />} />
-            <StatCard label="Twos" value={myStats.boundaries.twos} icon={<Target />} />
-            <StatCard label="Threes" value={myStats.boundaries.threes} icon={<Target />} />
-            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} />
-            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} />
+            <StatCard label="Ones" value={myStats.boundaries.ones} icon={<Target />} variant="blue" />
+            <StatCard label="Twos" value={myStats.boundaries.twos} icon={<Target />} variant="blue" />
+            <StatCard label="Threes" value={myStats.boundaries.threes} icon={<Target />} variant="blue" />
+            <StatCard label="Fours" value={myStats.boundaries.fours} icon={<GitMerge />} variant="blue" />
+            <StatCard label="Sixes" value={myStats.boundaries.sixes} icon={<Zap />} variant="blue" />
           </div>
         </div>
       </div>
@@ -220,28 +220,28 @@ export const PlayerStats: React.FC = () => {
   return (
     <div className="min-h-screen">
       <main>
-        <div className="w-full overflow-x-hidden space-y-8">
-            {/* Header */}
-            <div className="card p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-primary rounded-2xl">
-                    <BarChart3 className="text-white w-8 h-8" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Player Statistics</h1>
-                    <p className="text-gray-600">Comprehensive performance analytics</p>
-                  </div>
+        <div className="w-full space-y-8">
+          {/* Header */}
+          <div className="card p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-primary rounded-2xl">
+                  <BarChart3 className="text-white w-8 h-8" />
                 </div>
-                <button
-                  onClick={loadStats}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={loadingStats ? 'animate-spin' : ''} />
-                  Refresh Stats
-                </button>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Player Statistics</h1>
+                  <p className="text-gray-600">Comprehensive performance analytics</p>
+                </div>
               </div>
+              <button
+                onClick={loadStats}
+                className="btn-primary flex items-center gap-2"
+              >
+                <RefreshCw size={16} className={loadingStats ? 'animate-spin' : ''} />
+                Refresh Stats
+              </button>
             </div>
+          </div>
 
           {playerStats.length === 0 ? (
             <div className="card p-8 sm:p-12 text-center">
@@ -261,7 +261,7 @@ export const PlayerStats: React.FC = () => {
                   const value = data[0]?.[key] ?? 0
                   const names = data.map(p => p.player.name).join(', ')
                   return (
-                    <div key={idx} className={`${gradient} rounded-2xl shadow-lg p-6 text-white card-hover`}>
+                    <div key={idx} className={`${gradient} rounded-2xl shadow-lg p-6 text-white transition-shadow duration-300 hover:shadow-2xl`}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-white/80 text-sm font-medium">{title}</p>
@@ -288,11 +288,10 @@ export const PlayerStats: React.FC = () => {
                     <button
                       key={option.key}
                       onClick={() => setSortBy(option.key)}
-                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
-                        sortBy === option.key 
-                          ? 'bg-gradient-primary text-white shadow-lg' 
+                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${sortBy === option.key
+                          ? 'bg-gradient-primary text-white shadow-lg'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                      }`}
+                        }`}
                     >
                       {option.label}
                     </button>
